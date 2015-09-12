@@ -1,5 +1,10 @@
+#include <sys/types.h>
+
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -47,10 +52,45 @@ printescape(const char *s)
 	}
 }
 
+/* Parse time to time_t, assumes time_t is signed. */
+int
+strtotime(const char *s, time_t *t)
+{
+	long l;
+	char *e;
+
+	errno = 0;
+	l = strtol(s, &e, 10);
+	if (*s == '\0' || *e != '\0')
+		return -1;
+	if (t)
+		*t = (time_t)l;
+
+	return 0;
+}
+
+static void
+printtimeformat(const char *s)
+{
+	time_t t = 0;
+	struct tm *tm;
+	char buf[32];
+
+	if (strtotime(s, &t))
+		return;
+	if (!(tm = gmtime(&t)))
+		return;
+	if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", tm))
+		return;
+	fputs(buf, stdout);
+}
+
 static void
 printtweet(void)
 {
 	printescape(timestamp);
+	putchar('\t');
+	printtimeformat(timestamp);
 	putchar('\t');
 	printescape(text);
 	putchar('\t');
