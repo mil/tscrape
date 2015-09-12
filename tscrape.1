@@ -1,0 +1,30 @@
+.Dd September 12, 2015
+.Dt TSCRAPE 1
+.Os
+.Sh NAME
+.Nm tscrape
+.Nd twitter scraper
+.Sh SYNOPSIS
+.Nm
+.Sh DESCRIPTION
+.Nm
+reads the twitter HTML page and scrapes the data into a
+TAB-separated format to stdout.
+.Sh TAB-SEPARATED FORMAT FIELDS
+The items are saved in a TSV-like format. Control characters are removed.
+.Pp
+The order and format of the fields are:
+.Bl -tag -width 17n
+.It Ar timestamp
+UNIX timestamp in UTC+0.
+.It Ar tweet text
+Tweet text.
+.It Ar username
+Twitter username (can be a retweet).
+.It Ar fullname
+Twitter fullname (can be a retweet).
+.El
+.Sh SEE ALSO
+.Xr curl 1
+.Sh AUTHORS
+.An Hiltjo Posthuma Aq Mt hiltjo@codemadness.org

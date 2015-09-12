@@ -1,0 +1,24 @@
+tscrape - twitter (sc)raper
+===========================
+
+Install
+-------
+
+$ make
+# make install
+
+
+Usage:
+------
+
+curl -s 'https://twitter.com/namehere/with_replies' | tscrape 2>/dev/null
+
+or without retweets:
+
+curl -s 'https://twitter.com/namehere' | tscrape 2>/dev/null
+
+
+LICENSE
+-------
+
+MIT, see LICENSE file.
