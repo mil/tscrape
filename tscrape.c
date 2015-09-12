@@ -69,28 +69,34 @@ strtotime(const char *s, time_t *t)
 	return 0;
 }
 
-static void
-printtimeformat(const char *s)
+static int
+parsetime(const char *s, time_t *t, char *buf, size_t bufsiz)
 {
-	time_t t = 0;
 	struct tm *tm;
-	char buf[32];
 
-	if (strtotime(s, &t))
-		return;
-	if (!(tm = gmtime(&t)))
-		return;
-	if (!strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", tm))
-		return;
-	fputs(buf, stdout);
+	if (strtotime(s, t))
+		return -1;
+	if (!(tm = gmtime(t)))
+		return -1;
+	if (!strftime(buf, bufsiz, "%Y-%m-%dT%H:%M:%SZ", tm))
+		return -1;
+
+	return 0;
 }
 
 static void
 printtweet(void)
 {
-	printescape(timestamp);
+	char buf[32];
+	time_t t;
+	int r;
+
+	r = parsetime(timestamp, &t, buf, sizeof(buf));
+	if (r != -1)
+		printf("%ld", (long)t);
 	putchar('\t');
-	printtimeformat(timestamp);
+	if (r != -1)
+		fputs(buf, stdout);
 	putchar('\t');
 	printescape(text);
 	putchar('\t');
