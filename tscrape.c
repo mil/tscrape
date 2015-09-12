@@ -32,9 +32,19 @@ static XMLParser p;
 static void
 printescape(const char *s)
 {
-	for (; *s; s++)
-		if (!iscntrl(*s))
-			putchar(*s);
+	size_t i;
+
+	for (i = 0; *s; s++) {
+		if (iscntrl(*s)) {
+			i++;
+			continue;
+		}
+		if (i) {
+			i = 0;
+			putchar(' ');
+		}
+		putchar(*s);
+	}
 }
 
 static void
