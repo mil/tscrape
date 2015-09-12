@@ -5,7 +5,6 @@
 
 #include "xml.h"
 
-#define LEN(o) (sizeof(o) / sizeof(*o))
 #define STRP(s) s,sizeof(s)-1
 
 /* states */
@@ -18,8 +17,6 @@ enum {
 	Fullname  = 32,
 	Username  = 64
 };
-
-static void printtweet(void);
 
 /* data */
 static char fullname[128];
