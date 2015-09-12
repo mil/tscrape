@@ -1,6 +1,7 @@
 tscrape - twitter (sc)raper
 ===========================
 
+
 Install
 -------
 
@@ -8,8 +9,8 @@ $ make
 # make install
 
 
-Usage:
-------
+Usage
+-----
 
 curl -s 'https://twitter.com/namehere/with_replies' | tscrape 2>/dev/null
 
@@ -18,7 +19,21 @@ or without retweets:
 curl -s 'https://twitter.com/namehere' | tscrape 2>/dev/null
 
 
-LICENSE
+Why
+---
+
+Twitter removed the functionality to follow users using a RSS feed without
+authenticating or using their API. With this program you can format tweets in
+any way you like relatively anonymously.
+
+
+License
 -------
 
 MIT, see LICENSE file.
+
+
+Author
+------
+
+Hiltjo Posthuma <hiltjo@codemadness.org>
