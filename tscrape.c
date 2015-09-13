@@ -116,6 +116,19 @@ isclassmatch(const char *classes, const char *clss, size_t len)
 	return (p == classes || isspace(p[-1])) && (isspace(p[len]) || !p[len]);
 }
 
+/* convert XML and some HTML entities */
+static ssize_t
+html_entitytostr(const char *s, char *buf, size_t bufsiz)
+{
+	ssize_t len;
+
+	if ((len = xml_entitytostr(s, buf, bufsiz)) > 0)
+		return len;
+	else if (!strcmp(s, "&nbsp;"))
+		return (ssize_t)strlcpy(buf, " ", bufsiz);
+	return len;
+}
+
 static void
 xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 {
@@ -195,7 +208,7 @@ xmlattrentity(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 
 	if (!state)
 		return;
-	if ((len = xml_entitytostr(v, buf, sizeof(buf))) > 0)
+	if ((len = html_entitytostr(v, buf, sizeof(buf))) > 0)
 		xmlattr(x, t, tl, a, al, buf, (size_t)len);
 	else
 		xmlattr(x, t, tl, a, al, v, vl);
@@ -225,7 +238,7 @@ xmldataentity(XMLParser *x, const char *d, size_t dl)
 
 	if (!(state & (Text|Username|Fullname)))
 		return;
-	if ((len = xml_entitytostr(d, buf, sizeof(buf))) > 0)
+	if ((len = html_entitytostr(d, buf, sizeof(buf))) > 0)
 		xmldata(x, buf, (size_t)len);
 	else
 		xmldata(x, d, dl);
