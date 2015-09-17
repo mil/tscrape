@@ -8,6 +8,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "compat.h"
 #include "xml.h"
 
 #define STRP(s) s,sizeof(s)-1

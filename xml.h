@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 typedef struct xmlparser {
 	/* handlers */
 	void (*xmlattr)(struct xmlparser *, const char *, size_t,
