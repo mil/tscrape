@@ -1,6 +1,7 @@
 #include <sys/types.h>
 
 #include <ctype.h>
+#include <err.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "compat.h"
 #include "xml.h"
@@ -252,9 +254,23 @@ xmlcdata(XMLParser *x, const char *d, size_t dl)
 	xmldata(x, d, dl);
 }
 
+#ifndef USE_PLEDGE
+int
+pledge(const char *promises, const char *paths[])
+{
+	(void)promises;
+	(void)paths;
+
+	return 0;
+}
+#endif
+
 int
 main(void)
 {
+	if (pledge("stdio", NULL) == -1)
+		err(1, "pledge");
+
 	/* handlers */
 	p.xmlattr           = xmlattr;
 	p.xmlattrentity     = xmlattrentity;
