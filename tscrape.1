@@ -1,4 +1,4 @@
-.Dd September 12, 2015
+.Dd March 8, 2016
 .Dt TSCRAPE 1
 .Os
 .Sh NAME
@@ -19,7 +19,7 @@ The order and format of the fields are:
 .It UNIX timestamp
 UNIX timestamp in UTC+0.
 .It timestamp
-Date and time in the format: YYYY-mm-ddTHH:MM:SSZ.
+Date and time in RFC3339 format: YYYY-mm-ddTHH:MM:SSZ.
 .It tweet text
 Tweet text.
 .It username
@@ -27,6 +27,15 @@ Twitter username (can be a retweet).
 .It fullname
 Twitter fullname (can be a retweet).
 .El
+.Sh EXAMPLES
+.Bd -literal -offset left
+curl -s 'https://twitter.com/namehere/with_replies' | tscrape
+.Ed
+.Pp
+or without retweets:
+.Bd -literal -offset left
+curl -s 'https://twitter.com/namehere' | tscrape
+.Ed
 .Sh SEE ALSO
 .Xr curl 1
 .Sh AUTHORS
