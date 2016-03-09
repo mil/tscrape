@@ -11,7 +11,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "compat.h"
 #include "xml.h"
 
 #define STRP(s) s,sizeof(s)-1
@@ -26,6 +25,13 @@ enum {
 	Fullname  = 32,
 	Username  = 64
 };
+
+/* for compatibility with libcs that don't have strlcat or strlcpy. The
+ * functions are synced from OpenBSD */
+#undef strlcat
+size_t strlcat(char *, const char *, size_t);
+#undef strlcpy
+size_t strlcpy(char *, const char *, size_t);
 
 /* data */
 static char fullname[128];
