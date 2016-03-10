@@ -142,10 +142,6 @@ html_entitytostr(const char *s, char *buf, size_t bufsiz)
 static void
 xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	(void)x;
-	(void)tl;
-	(void)isshort;
-
 	if (!strcmp(t, "p"))
 		state &= ~Text;
 	else if (!strcmp(t, "span"))
@@ -158,10 +154,6 @@ static void
 xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 {
 	const char *v = classname;
-
-	(void)x;
-	(void)tl;
-	(void)isshort;
 
 	if (!strcmp(t, "p") && isclassmatch(v, STRP("js-tweet-text"))) {
 		if (state & (Item | Stream | Header))
@@ -195,12 +187,6 @@ static void
 xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
         const char *v, size_t vl)
 {
-	(void)x;
-	(void)t;
-	(void)tl;
-	(void)al;
-	(void)vl;
-
 	if (!strcmp(a, "class")) {
 		strlcat(classname, v, sizeof(classname));
 	} else if ((state & Item) && !strcmp(t, "span") && !strcmp(a, "data-time")) {
@@ -227,9 +213,6 @@ xmlattrentity(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 static void
 xmldata(XMLParser *x, const char *d, size_t dl)
 {
-	(void)x;
-	(void)dl;
-
 	if (state & Username)
 		strlcat(username, d, sizeof(username));
 	else if (state & Fullname)
@@ -243,8 +226,6 @@ xmldataentity(XMLParser *x, const char *d, size_t dl)
 {
 	char buf[16];
 	ssize_t len;
-
-	(void)x;
 
 	if (!(state & (Text|Username|Fullname)))
 		return;
@@ -264,9 +245,6 @@ xmlcdata(XMLParser *x, const char *d, size_t dl)
 int
 pledge(const char *promises, const char *paths[])
 {
-	(void)promises;
-	(void)paths;
-
 	return 0;
 }
 #endif
