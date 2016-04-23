@@ -48,9 +48,16 @@ static void
 printescape(const char *s)
 {
 	size_t i;
+	char *e;
 
-	for (i = 0; *s; s++) {
-		if (iscntrl(*s)) {
+	/* strip leading and trailing white-space */
+	for (; *s && isspace(*s); s++)
+		;
+	for (e = s + strlen(s); e > s && isspace(*(e - 1)); e--)
+		;
+
+	for (i = 0; *s && s < e; s++) {
+		if (iscntrl(*s) || isspace(*s)) {
 			i++;
 			continue;
 		}
