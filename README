@@ -12,11 +12,11 @@ $ make
 Usage
 -----
 
-curl -s 'https://twitter.com/namehere/with_replies' | tscrape
+curl --compressed -s 'https://twitter.com/namehere/with_replies' | tscrape
 
 or without retweets:
 
-curl -s 'https://twitter.com/namehere' | tscrape
+curl --compressed -s 'https://twitter.com/namehere' | tscrape
 
 
 Why

@@ -26,7 +26,7 @@ enum {
 	Username  = 64
 };
 
-/* for compatibility with libcs that don't have strlcat or strlcpy. The
+/* for compatibility with libc's that don't have strlcat or strlcpy. The
  * functions are synced from OpenBSD */
 #undef strlcat
 size_t strlcat(char *, const char *, size_t);
