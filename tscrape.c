@@ -73,11 +73,11 @@ printescape(const char *s)
 int
 strtotime(const char *s, time_t *t)
 {
-	long l;
+	long long l;
 	char *e;
 
 	errno = 0;
-	l = strtol(s, &e, 10);
+	l = strtoll(s, &e, 10);
 	if (*s == '\0' || *e != '\0')
 		return -1;
 	if (t)
@@ -110,7 +110,7 @@ printtweet(void)
 
 	r = parsetime(timestamp, &t, buf, sizeof(buf));
 	if (r != -1)
-		printf("%ld", (long)t);
+		printf("%lld", (long long)t);
 	putchar('\t');
 	if (r != -1)
 		fputs(buf, stdout);
