@@ -16,7 +16,7 @@ curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere/with_replies' |
 
 or without retweets:
 
-curl -http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere' | tscrape
+curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere' | tscrape
 
 
 Why
