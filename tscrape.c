@@ -86,9 +86,9 @@ parsetime(const char *s, time_t *t, char *buf, size_t bufsiz)
 
 	if (strtotime(s, t))
 		return -1;
-	if (!(tm = gmtime(t)))
+	if (!(tm = localtime(t)))
 		return -1;
-	if (!strftime(buf, bufsiz, "%Y-%m-%dT%H:%M:%SZ", tm))
+	if (!strftime(buf, bufsiz, "%Y-%m-%d %H:%M", tm))
 		return -1;
 
 	return 0;
