@@ -36,7 +36,7 @@ size_t strlcpy(char *, const char *, size_t);
 /* data */
 static char fullname[128];
 static char timestamp[16];
-static char text[256];
+static char text[1024];
 static char username[128];
 
 static char      classname[256];
