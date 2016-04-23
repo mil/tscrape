@@ -1,4 +1,4 @@
-.Dd March 8, 2016
+.Dd April 23, 2016
 .Dt TSCRAPE 1
 .Os
 .Sh NAME
@@ -29,12 +29,12 @@ Twitter fullname (can be a retweet).
 .El
 .Sh EXAMPLES
 .Bd -literal -offset left
-curl --compressed -s 'https://twitter.com/namehere/with_replies' | tscrape
+curl -H 'User-Agent:' --compressed -s 'https://twitter.com/namehere/with_replies' | tscrape
 .Ed
 .Pp
 or without retweets:
 .Bd -literal -offset left
-curl --compressed -s 'https://twitter.com/namehere' | tscrape
+curl -H 'User-Agent:' --compressed -s 'https://twitter.com/namehere' | tscrape
 .Ed
 .Sh SEE ALSO
 .Xr curl 1
