@@ -65,7 +65,15 @@ printescape(const char *s)
 			i = 0;
 			putchar(' ');
 		}
-		putchar(*s);
+		/* Escape characters below as HTML 2.0 / XML 1.0. */
+		switch(*s) {
+		case '<':  fputs("&lt;",   stdout); break;
+		case '>':  fputs("&gt;",   stdout); break;
+		case '\'': fputs("&#39;",  stdout); break;
+		case '&':  fputs("&amp;",  stdout); break;
+		case '"':  fputs("&quot;", stdout); break;
+		default:   putchar(*s);
+		}
 	}
 }
 
