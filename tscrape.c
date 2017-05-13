@@ -11,6 +11,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifndef USE_PLEDGE
+#define pledge(p1,p2) 0
+#endif
+
 #include "xml.h"
 
 #define STRP(s) s,sizeof(s)-1
@@ -255,14 +259,6 @@ xmlcdata(XMLParser *x, const char *d, size_t dl)
 {
 	xmldata(x, d, dl);
 }
-
-#ifndef USE_PLEDGE
-int
-pledge(const char *promises, const char *paths[])
-{
-	return 0;
-}
-#endif
 
 int
 main(void)
