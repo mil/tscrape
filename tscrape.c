@@ -191,6 +191,8 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 			state |= Username;
 		}
 	}
+	if ((state & Text) && !strcmp(t, "a") && !isspace(text[0]))
+		strlcat(text, " ", sizeof(text));
 	classname[0] = '\0';
 }
 
