@@ -153,12 +153,20 @@ html_entitytostr(const char *s, char *buf, size_t bufsiz)
 static void
 xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 {
+	classname[0] = '\0';
+
 	if (!strcmp(t, "p"))
 		state &= ~Text;
 	else if (!strcmp(t, "span"))
 		state &= ~(Timestamp|Username);
 	else if (!strcmp(t, "strong"))
 		state &= ~Fullname;
+}
+
+static void
+xmltagstart(XMLParser *x, const char *t, size_t tl)
+{
+	classname[0] = '\0';
 }
 
 static void
@@ -193,7 +201,6 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 	}
 	if ((state & Text) && !strcmp(t, "a") && !isspace(text[0]))
 		strlcat(text, " ", sizeof(text));
-	classname[0] = '\0';
 }
 
 static void
@@ -205,6 +212,11 @@ xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 	} else if ((state & Item) && !strcmp(t, "span") && !strcmp(a, "data-time")) {
 		/* UNIX timestamp */
 		strlcat(datatime, v, sizeof(datatime));
+	}
+
+	if ((state & Item) && !strcmp(a, "data-image-url")) {
+		strlcat(text, " ", sizeof(text));
+		strlcat(text, v, sizeof(text));
 	}
 }
 
@@ -234,7 +246,8 @@ xmldata(XMLParser *x, const char *d, size_t dl)
 		strlcat(fullname, " ", sizeof(fullname));
 		strlcat(fullname, d, sizeof(fullname));
 	} else if (state & Text) {
-		strlcat(text, d, sizeof(text));
+		if (!isclassmatch(classname, STRP("u-hidden")))
+			strlcat(text, d, sizeof(text));
 	}
 }
 
@@ -270,6 +283,7 @@ main(void)
 	p.xmlcdata          = xmlcdata;
 	p.xmldata           = xmldata;
 	p.xmldataentity     = xmldataentity;
+	p.xmltagstart       = xmltagstart;
 	p.xmltagend         = xmltagend;
 	p.xmltagstartparsed = xmltagstartparsed;
 	/* reader (stdin) */
