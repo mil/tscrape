@@ -29,11 +29,6 @@ Twitter fullname (can be a retweet).
 .El
 .Sh EXAMPLES
 .Bd -literal -offset left
-curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere/with_replies' | tscrape
-.Ed
-.Pp
-or without retweets:
-.Bd -literal -offset left
 curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere' | tscrape
 .Ed
 .Sh SEE ALSO

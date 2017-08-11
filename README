@@ -12,10 +12,6 @@ $ make
 Usage
 -----
 
-curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere/with_replies' | tscrape
-
-or without retweets:
-
 curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere' | tscrape
 
 
