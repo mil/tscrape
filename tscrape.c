@@ -42,9 +42,12 @@ static char fullname[1024];
 static char timestamp[16];
 static char text[4096];
 static char username[1024];
+static int  ispinned;
+static int  isretweet;
 
 static char      classname[256];
 static char      datatime[16];
+static char      itemid[64];
 static int       state;
 static XMLParser p;
 
@@ -110,20 +113,26 @@ printtweet(void)
 {
 	char buf[32];
 	time_t t;
-	int r;
 
-	r = parsetime(timestamp, &t, buf, sizeof(buf));
-	if (r != -1)
+	if (parsetime(timestamp, &t, buf, sizeof(buf)) != -1) {
 		printf("%lld", (long long)t);
-	putchar('\t');
-	if (r != -1)
+		putchar('\t');
 		fputs(buf, stdout);
+	} else {
+		putchar('\t');
+	}
 	putchar('\t');
 	printescape(text);
+	putchar('\t');
+	printescape(itemid);
 	putchar('\t');
 	printescape(username);
 	putchar('\t');
 	printescape(fullname);
+	putchar('\t');
+	printf("%d", isretweet);
+	putchar('\t');
+	printf("%d", ispinned);
 	putchar('\n');
 }
 
@@ -182,11 +191,15 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 		state = 0;
 	} else if (!strcmp(t, "li") && isclassmatch(v, STRP("js-stream-item"))) {
 		state |= Item;
+		datatime[0] = text[0] = timestamp[0] = fullname[0] = '\0';
+		itemid[0] = username[0] = '\0';
+		ispinned = isretweet = 0;
+		if (isclassmatch(v, STRP("js-pinned")))
+			ispinned = 1;
 	} else if (state & Item) {
 		if (!strcmp(t, "div") && isclassmatch(v, STRP("js-stream-tweet"))) {
 			state &= ~(Text|Header);
 			state |= Stream;
-			datatime[0] = text[0] = timestamp[0] = fullname[0] = username[0] = '\0';
 		} else if (!strcmp(t, "a") && isclassmatch(v, STRP("js-action-profile"))) {
 			state |= Header;
 		} else if (!strcmp(t, "strong") && isclassmatch(v, STRP("fullname"))) {
@@ -209,14 +222,19 @@ xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 {
 	if (!strcmp(a, "class")) {
 		strlcat(classname, v, sizeof(classname));
-	} else if ((state & Item) && !strcmp(t, "span") && !strcmp(a, "data-time")) {
-		/* UNIX timestamp */
-		strlcat(datatime, v, sizeof(datatime));
-	}
-
-	if ((state & Item) && !strcmp(a, "data-image-url")) {
-		strlcat(text, " ", sizeof(text));
-		strlcat(text, v, sizeof(text));
+	} else if (state & Item) {
+		if (!strcmp(t, "div")) {
+			if (!strcmp(a, "data-item-id"))
+				strlcpy(itemid, v, sizeof(itemid));
+			else if (!strcmp(a, "data-retweet-id"))
+				isretweet = 1;
+		} else if (!strcmp(t, "span") && !strcmp(a, "data-time")) {
+			/* UNIX timestamp */
+			strlcpy(datatime, v, sizeof(datatime));
+		} else if (!strcmp(a, "data-image-url")) {
+			strlcat(text, " ", sizeof(text));
+			strlcat(text, v, sizeof(text));
+		}
 	}
 }
 
