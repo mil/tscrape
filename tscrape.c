@@ -38,10 +38,10 @@ size_t strlcat(char *, const char *, size_t);
 size_t strlcpy(char *, const char *, size_t);
 
 /* data */
-static char fullname[128];
+static char fullname[1024];
 static char timestamp[16];
-static char text[1024];
-static char username[128];
+static char text[4096];
+static char username[1024];
 
 static char      classname[256];
 static char      datatime[16];
@@ -226,12 +226,16 @@ xmlattrentity(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 static void
 xmldata(XMLParser *x, const char *d, size_t dl)
 {
-	if (state & Username)
+	if (state & Username) {
+		if (d[0] == '@')
+			strlcat(username, " ", sizeof(username));
 		strlcat(username, d, sizeof(username));
-	else if (state & Fullname)
+	} else if (state & Fullname) {
+		strlcat(fullname, " ", sizeof(fullname));
 		strlcat(fullname, d, sizeof(fullname));
-	else if (state & Text)
+	} else if (state & Text) {
 		strlcat(text, d, sizeof(text));
+	}
 }
 
 static void
