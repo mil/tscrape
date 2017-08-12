@@ -162,8 +162,6 @@ html_entitytostr(const char *s, char *buf, size_t bufsiz)
 static void
 xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	classname[0] = '\0';
-
 	if (!strcmp(t, "p"))
 		state &= ~Text;
 	else if (!strcmp(t, "span"))
