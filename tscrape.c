@@ -22,17 +22,17 @@ enum {
 	Stream    = 2,
 	Header    = 4,
 	Timestamp = 8,
-	Text      = 16,
-	Fullname  = 32,
-	Username  = 64
+	Text      = 16
 };
 
 /* data */
 static char fullname[1024];
+static int  ispinned;
+static char itemusername[1024];
+static char itemfullname[1024];
 static char timestamp[16];
 static char text[4096];
 static char username[1024];
-static int  ispinned;
 
 static char      classname[256];
 static char      datatime[16];
@@ -50,13 +50,17 @@ printtweet(void)
 	if (parsetime(timestamp, &t, buf, sizeof(buf)) != -1)
 		printf("%lld", (long long)t);
 	putchar('\t');
+	printescape(username);
+	putchar('\t');
+	printescape(fullname);
+	putchar('\t');
 	printescape(text);
 	putchar('\t');
 	printescape(itemid);
 	putchar('\t');
-	printescape(username);
+	printescape(itemusername);
 	putchar('\t');
-	printescape(fullname);
+	printescape(itemfullname);
 	putchar('\t');
 	printescape(retweetid);
 	putchar('\t');
@@ -93,9 +97,7 @@ xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 	if (!strcmp(t, "p"))
 		state &= ~Text;
 	else if (!strcmp(t, "span"))
-		state &= ~(Timestamp|Username);
-	else if (!strcmp(t, "strong"))
-		state &= ~Fullname;
+		state &= ~(Timestamp);
 }
 
 static void
@@ -118,8 +120,8 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 		state = 0;
 	} else if (!strcmp(t, "li") && isclassmatch(v, STRP("js-stream-item"))) {
 		state |= Item;
-		datatime[0] = text[0] = timestamp[0] = fullname[0] = '\0';
-		itemid[0] = username[0] = retweetid[0] = '\0';
+		datatime[0] = text[0] = timestamp[0] = itemfullname[0] = '\0';
+		itemid[0] = itemusername[0] = retweetid[0] = '\0';
 		ispinned = 0;
 		if (isclassmatch(v, STRP("js-pinned")))
 			ispinned = 1;
@@ -129,14 +131,10 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 			state |= Stream;
 		} else if (!strcmp(t, "a") && isclassmatch(v, STRP("js-action-profile"))) {
 			state |= Header;
-		} else if (!strcmp(t, "strong") && isclassmatch(v, STRP("fullname"))) {
-			state |= Fullname;
 		} else if (!strcmp(t, "span") && isclassmatch(v, STRP("js-short-timestamp"))) {
 			state |= Timestamp;
 			strlcpy(timestamp, datatime, sizeof(timestamp));
 			datatime[0] = '\0';
-		} else if (!strcmp(t, "span") && isclassmatch(v, STRP("username"))) {
-			state |= Username;
 		}
 	}
 	if ((state & Text) && !strcmp(t, "a") && !isspace(text[0]))
@@ -147,6 +145,17 @@ static void
 xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
         const char *v, size_t vl)
 {
+	/* NOTE: assumes classname attribute is set before data-* in current tag */
+	if (!state && !strcmp(t, "div") && isclassmatch(classname, STRP("user-actions"))) {
+		if (!strcmp(a, "data-screen-name")) {
+			strlcat(username, " ", sizeof(username));
+			strlcat(username, v, sizeof(username));
+		} else if (!strcmp(a, "data-name")) {
+			strlcat(fullname, " ", sizeof(fullname));
+			strlcat(fullname, v, sizeof(fullname));
+		}
+	}
+
 	if (!strcmp(a, "class")) {
 		strlcat(classname, v, sizeof(classname));
 	} else if (state & Item) {
@@ -155,6 +164,16 @@ xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 				strlcpy(itemid, v, sizeof(itemid));
 			else if (!strcmp(a, "data-retweet-id"))
 				strlcpy(retweetid, v, sizeof(retweetid));
+
+			if (isclassmatch(classname, STRP("js-stream-tweet"))) {
+				if (!strcmp(a, "data-screen-name")) {
+					strlcat(itemusername, " ", sizeof(itemusername));
+					strlcat(itemusername, v, sizeof(itemusername));
+				} else if (!strcmp(a, "data-name")) {
+					strlcat(itemfullname, " ", sizeof(itemfullname));
+					strlcat(itemfullname, v, sizeof(itemfullname));
+				}
+			}
 		} else if (!strcmp(t, "span") && !strcmp(a, "data-time")) {
 			/* UNIX timestamp */
 			strlcpy(datatime, v, sizeof(datatime));
@@ -183,14 +202,7 @@ xmlattrentity(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 static void
 xmldata(XMLParser *x, const char *d, size_t dl)
 {
-	if (state & Username) {
-		if (d[0] == '@')
-			strlcat(username, " ", sizeof(username));
-		strlcat(username, d, sizeof(username));
-	} else if (state & Fullname) {
-		strlcat(fullname, " ", sizeof(fullname));
-		strlcat(fullname, d, sizeof(fullname));
-	} else if (state & Text) {
+	if (state & Text) {
 		if (!isclassmatch(classname, STRP("u-hidden")))
 			strlcat(text, d, sizeof(text));
 	}
@@ -202,7 +214,7 @@ xmldataentity(XMLParser *x, const char *d, size_t dl)
 	char buf[16];
 	ssize_t len;
 
-	if (!(state & (Text|Username|Fullname)))
+	if (!(state & Text))
 		return;
 	if ((len = html_entitytostr(d, buf, sizeof(buf))) > 0)
 		xmldata(x, buf, (size_t)len);

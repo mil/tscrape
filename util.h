@@ -24,8 +24,9 @@ struct feed {
 
 enum {
 	FieldUnixTimestamp = 0,
-	FieldText, FieldItemid,
 	FieldUsername, FieldFullname,
+	FieldText, FieldItemid,
+	FieldItemUsername, FieldItemFullname,
 	FieldRetweetid, FieldIspinned,
 	FieldLast
 };
