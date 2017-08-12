@@ -4,6 +4,7 @@ NAME = tscrape
 VERSION = 0.1
 BIN = \
 	tscrape\
+	tscrape_html\
 	tscrape_plain
 
 SRC = ${BIN:=.c}
