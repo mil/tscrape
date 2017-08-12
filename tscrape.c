@@ -43,11 +43,11 @@ static char timestamp[16];
 static char text[4096];
 static char username[1024];
 static int  ispinned;
-static int  isretweet;
 
 static char      classname[256];
 static char      datatime[16];
 static char      itemid[64];
+static char      retweetid[64];
 static int       state;
 static XMLParser p;
 
@@ -130,7 +130,7 @@ printtweet(void)
 	putchar('\t');
 	printescape(fullname);
 	putchar('\t');
-	printf("%d", isretweet);
+	printescape(retweetid);
 	putchar('\t');
 	printf("%d", ispinned);
 	putchar('\n');
@@ -191,8 +191,8 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 	} else if (!strcmp(t, "li") && isclassmatch(v, STRP("js-stream-item"))) {
 		state |= Item;
 		datatime[0] = text[0] = timestamp[0] = fullname[0] = '\0';
-		itemid[0] = username[0] = '\0';
-		ispinned = isretweet = 0;
+		itemid[0] = username[0] = retweetid[0] = '\0';
+		ispinned = 0;
 		if (isclassmatch(v, STRP("js-pinned")))
 			ispinned = 1;
 	} else if (state & Item) {
@@ -226,7 +226,7 @@ xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 			if (!strcmp(a, "data-item-id"))
 				strlcpy(itemid, v, sizeof(itemid));
 			else if (!strcmp(a, "data-retweet-id"))
-				isretweet = 1;
+				strlcpy(retweetid, v, sizeof(retweetid));
 		} else if (!strcmp(t, "span") && !strcmp(a, "data-time")) {
 			/* UNIX timestamp */
 			strlcpy(datatime, v, sizeof(datatime));
