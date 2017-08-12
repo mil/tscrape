@@ -1,0 +1,109 @@
+#!/bin/sh
+# update feeds, merge with old feeds.
+# NOTE: assumes "tscrape_*" executables are in $PATH.
+
+# defaults
+tscrapepath="$HOME/.tscrape/feeds"
+
+# load config (evaluate shellscript).
+# loadconfig(configfile)
+loadconfig() {
+	# allow to specify config via argv[1].
+	if [ ! x"$1" = x"" ]; then
+		# get absolute path of config file.
+		config=$(readlink -f "$1")
+	else
+		# default config location.
+		config="$HOME/.tscrape/tscraperc"
+	fi
+
+	# load config: config is loaded here to be able to override $tscrapepath
+	# or functions.
+	if [ -r "${config}" ]; then
+		. "${config}"
+	else
+		echo "Configuration file \"${config}\" does not exist or is not readable." >&2
+		echo "See tscraperc.example for an example." >&2
+		exit 1
+	fi
+}
+
+# merge raw files.
+# merge(oldfile, newfile)
+merge() {
+	# unique sort by id, retweetid.
+	# order by timestamp (desc).
+	(sort -t '	' -u -k5,5 -k8,8 "$1" "$2" 2>/dev/null) |
+	sort -t '	' -k1rn,1
+}
+
+# fetch a feed via HTTP/HTTPS etc.
+# fetchfeed(url, name, feedfile)
+fetchfeed() {
+	if curl --http1.0 -H 'User-Agent:' -f -s -S --max-time 15 -z "$3" "$1"; then
+		printf "  OK %s %s\n" "$(date +'%H:%M:%S')" "$2" >&2
+	else
+		printf "FAIL %s %s\n" "$(date +'%H:%M:%S')" "$2" >&2
+	fi
+}
+
+# fetch and parse feed.
+# feed(name, feedurl, [basesiteurl], [encoding])
+feed() {
+	(name="$1"
+	tmpfeedfile="${tscrapetmpdir}/${name}"
+	tmpencfile=""
+	encoding="$4"
+	tscrapefile="${tscrapepath}/$1"
+
+	fetchfeed "$2" "$1" "${tscrapefile}" | tscrape "$3" > "${tmpfeedfile}"
+
+	# get new data and merge with old.
+	tscrapefilenew="${tscrapepath}/${name}.new"
+	# new feed data is non-empty.
+	if [ -s "${tmpfeedfile}" ]; then
+		# if file exists, merge
+		if [ -e "${tscrapefile}" ]; then
+			merge "${tscrapefile}" "${tmpfeedfile}" > "${tscrapefilenew}"
+			# overwrite old file with updated file
+			mv "${tscrapefilenew}" "${tscrapefile}"
+		else
+			merge "/dev/null" "${tmpfeedfile}" > "${tscrapefile}"
+		fi
+	fi) &
+}
+
+terminated() {
+	isrunning="0"
+}
+
+cleanup() {
+	# remove temporary files
+	rm -rf "${tscrapetmpdir}"
+}
+
+feeds() {
+	echo "Configuration file \"${config}\" is invalid or does not contain a \"feeds\" function." >&2
+	echo "See tscraperc.example for an example." >&2
+}
+
+# load config file.
+loadconfig "$1"
+# fetch feeds and store in temporary file.
+tscrapetmpdir="$(mktemp -d '/tmp/tscrape_XXXXXX')"
+# kill whole current process group on ^C.
+isrunning="1"
+# SIGTERM: signal to terminate parent.
+trap -- "terminated" "15"
+# SIGINT: kill all running childs >:D
+trap -- "kill -TERM -$$" "2"
+# make sure path exists.
+mkdir -p "${tscrapepath}"
+# fetch feeds specified in config file.
+feeds
+# wait till all feeds are fetched (concurrently).
+wait
+# cleanup temporary files etc.
+cleanup
+# if terminated.
+[ "${isrunning}" = "0" ] && exit 1

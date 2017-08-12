@@ -53,8 +53,23 @@ printfeed(FILE *fp, struct feed *f)
 	        fprintf(stdout, "%04d-%02d-%02d&nbsp;%02d:%02d ",
 		        tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
 		        tm->tm_hour, tm->tm_min);
+
 		if (isnew)
 			fputs("<b><u>", stdout);
+
+		if (fields[FieldRetweetid][0]) {
+			fputs("<a href=\"https://mobile.twitter.com/", stdout);
+			xmlencode(fields[FieldItemUsername], stdout);
+			fputs("/status/", stdout);
+			xmlencode(fields[FieldRetweetid], stdout);
+			fputs("\">retweeted</a>", stdout);
+			fputs(" <a href=\"https://mobile.twitter.com/", stdout);
+			xmlencode(fields[FieldItemUsername], stdout);
+			fputs("\">@", stdout);
+			xmlencode(fields[FieldItemUsername], stdout);
+			fputs("</a> ", stdout);
+		}
+
 		if (islink) {
 			fputs("<a href=\"https://mobile.twitter.com/", stdout);
 			xmlencode(fields[FieldUsername], stdout);
@@ -68,13 +83,6 @@ printfeed(FILE *fp, struct feed *f)
 		if (isnew)
 			fputs("</u></b>", stdout);
 
-		if (fields[FieldRetweetid][0]) {
-			printf(" <a href=\"https://mobile.twitter.com/");
-			xmlencode(fields[FieldItemUsername], stdout);
-			fputs("/status/", stdout);
-			xmlencode(fields[FieldRetweetid], stdout);
-			fputs("\">[retweet]</a>", stdout);
-		}
 		fputs("\n", stdout);
 	}
 }
