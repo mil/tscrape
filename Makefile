@@ -3,14 +3,16 @@ include config.mk
 NAME = tscrape
 VERSION = 0.1
 BIN = \
-	tscrape
+	tscrape\
+	tscrape_plain
 
 SRC = ${BIN:=.c}
 
 LIBUTIL = libutil.a
 LIBUTILSRC = \
 	strlcat.c\
-	strlcpy.c
+	strlcpy.c\
+	util.c
 LIBUTILOBJ = ${LIBUTILSRC:.c=.o}
 
 LIBXML = libxml.a

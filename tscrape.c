@@ -11,11 +11,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifndef USE_PLEDGE
-#define pledge(p1,p2) 0
-#endif
-
 #include "xml.h"
+#include "util.h"
 
 #define STRP(s) s,sizeof(s)-1
 
@@ -29,13 +26,6 @@ enum {
 	Fullname  = 32,
 	Username  = 64
 };
-
-/* for compatibility with libc's that don't have strlcat or strlcpy. The
- * functions are synced from OpenBSD */
-#undef strlcat
-size_t strlcat(char *, const char *, size_t);
-#undef strlcpy
-size_t strlcpy(char *, const char *, size_t);
 
 /* data */
 static char fullname[1024];
@@ -52,75 +42,13 @@ static int       state;
 static XMLParser p;
 
 static void
-printescape(const char *s)
-{
-	size_t i;
-	const char *e;
-
-	/* strip leading and trailing white-space */
-	for (; *s && isspace(*s); s++)
-		;
-	for (e = s + strlen(s); e > s && isspace(*(e - 1)); e--)
-		;
-
-	for (i = 0; *s && s < e; s++) {
-		if (iscntrl(*s) || isspace(*s)) {
-			i++;
-			continue;
-		}
-		if (i) {
-			i = 0;
-			putchar(' ');
-		}
-		putchar(*s);
-	}
-}
-
-/* Parse time to time_t, assumes time_t is signed. */
-int
-strtotime(const char *s, time_t *t)
-{
-	long long l;
-	char *e;
-
-	errno = 0;
-	l = strtoll(s, &e, 10);
-	if (*s == '\0' || *e != '\0')
-		return -1;
-	if (t)
-		*t = (time_t)l;
-
-	return 0;
-}
-
-static int
-parsetime(const char *s, time_t *t, char *buf, size_t bufsiz)
-{
-	struct tm *tm;
-
-	if (strtotime(s, t))
-		return -1;
-	if (!(tm = localtime(t)))
-		return -1;
-	if (!strftime(buf, bufsiz, "%Y-%m-%d %H:%M", tm))
-		return -1;
-
-	return 0;
-}
-
-static void
 printtweet(void)
 {
 	char buf[32];
 	time_t t;
 
-	if (parsetime(timestamp, &t, buf, sizeof(buf)) != -1) {
+	if (parsetime(timestamp, &t, buf, sizeof(buf)) != -1)
 		printf("%lld", (long long)t);
-		putchar('\t');
-		fputs(buf, stdout);
-	} else {
-		putchar('\t');
-	}
 	putchar('\t');
 	printescape(text);
 	putchar('\t');
