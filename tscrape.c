@@ -185,7 +185,8 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 		if (state & (Item | Stream | Header))
 			state |= Text;
 	} else if (!strcmp(t, "div") && isclassmatch(v, STRP("stream-item-footer"))) {
-		printtweet();
+		if (text[0] && username[0])
+			printtweet();
 		state = 0;
 	} else if (!strcmp(t, "li") && isclassmatch(v, STRP("js-stream-item"))) {
 		state |= Item;
