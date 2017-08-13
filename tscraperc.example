@@ -2,7 +2,7 @@
 
 # list of feeds to fetch:
 feeds() {
-	# feed <name> <feedurl> [basesiteurl] [encoding]
+	# feed <name> <feedurl>
 	feed "Rich Felker" "https://twitter.com/richfelker"
 	feed "Internet of shit" "https://twitter.com/internetofshit"
 	feed "Donald trump" "https://twitter.com/realdonaldtrump"

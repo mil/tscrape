@@ -48,15 +48,14 @@ fetchfeed() {
 }
 
 # fetch and parse feed.
-# feed(name, feedurl, [basesiteurl], [encoding])
+# feed(name, feedurl)
 feed() {
 	(name="$1"
 	tmpfeedfile="${tscrapetmpdir}/${name}"
 	tmpencfile=""
-	encoding="$4"
 	tscrapefile="${tscrapepath}/$1"
 
-	fetchfeed "$2" "$1" "${tscrapefile}" | tscrape "$3" > "${tmpfeedfile}"
+	fetchfeed "$2" "$1" "${tscrapefile}" | tscrape > "${tmpfeedfile}"
 
 	# get new data and merge with old.
 	tscrapefilenew="${tscrapepath}/${name}.new"
