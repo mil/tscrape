@@ -183,6 +183,13 @@ xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 			strlcat(text, " ", sizeof(text));
 			strlcat(text, v, sizeof(text));
 		}
+
+		/* indication it has a video */
+		if (itemid[0] && !strcmp(a, "data-playable-media-url")) {
+			strlcat(text, " ", sizeof(text));
+			strlcat(text, "https://twitter.com/i/videos/", sizeof(text));
+			strlcat(text, itemid, sizeof(text));
+		}
 	}
 }
 
