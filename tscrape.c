@@ -177,7 +177,9 @@ xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 		} else if (!strcmp(t, "span") && !strcmp(a, "data-time")) {
 			/* UNIX timestamp */
 			strlcpy(datatime, v, sizeof(datatime));
-		} else if (!strcmp(a, "data-image-url")) {
+		}
+		/* NOTE: can be <div data-image-url>. */
+		if (!strcmp(a, "data-image-url")) {
 			strlcat(text, " ", sizeof(text));
 			strlcat(text, v, sizeof(text));
 		}
