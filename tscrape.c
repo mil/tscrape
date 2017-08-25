@@ -197,6 +197,9 @@ static void
 xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
         const char *v, size_t vl)
 {
+	if (isignore)
+		return;
+
 	/* NOTE: assumes classname attribute is set before data-* in current tag */
 	if (!state && !strcmp(t, "div") && isclassmatch(classname, STRP("user-actions"))) {
 		if (!strcmp(a, "data-screen-name")) {
@@ -252,7 +255,7 @@ xmlattrentity(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 	char buf[16];
 	ssize_t len;
 
-	if (!state)
+	if (!state || isignore)
 		return;
 	if ((len = html_entitytostr(v, buf, sizeof(buf))) > 0)
 		xmlattr(x, t, tl, a, al, buf, (size_t)len);
