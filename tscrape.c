@@ -38,8 +38,14 @@ static char      classname[256];
 static char      datatime[16];
 static char      itemid[64];
 static char      retweetid[64];
-static int       state;
+static int       isignore, state;
 static XMLParser p;
+
+/* ignored tag, all text between this is interpreted literally and ignored */
+static char *ignoretags[] = {
+        "style",
+        "script",
+};
 
 static void
 printtweet(void)
@@ -94,6 +100,9 @@ html_entitytostr(const char *s, char *buf, size_t bufsiz)
 static void
 xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 {
+	if (isignore)
+		return;
+
 	if (!strcmp(t, "p"))
 		state &= ~Text;
 	else if (!strcmp(t, "span"))
@@ -103,35 +112,78 @@ xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 static void
 xmltagstart(XMLParser *x, const char *t, size_t tl)
 {
+	int i;
+
 	classname[0] = '\0';
+
+	for (i = 0; i < sizeof(ignoretags) / sizeof(*ignoretags); i++) {
+		if (!strcasecmp(ignoretags[i], t)) {
+			isignore = 1;
+			break;
+		}
+	}
 }
 
 static void
 xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	const char *c = classname;
+	char tmp[64];
+	int c, i;
 
-	if (!strcmp(t, "p") && isclassmatch(c, STRP("js-tweet-text"))) {
+	if (isignore) {
+		/* HACK: ignored tag is parsed, hook into reader and read raw data
+		   until literal end tag (without using the normal parser).
+		   process (buffered) as xml[c]data (no entity) */
+startignore:
+		while ((c = x->getnext()) != EOF) {
+			if (c == '<')
+				break;
+		}
+		if (c == EOF)
+			return;
+		if ((c = x->getnext()) != '/')
+			goto startignore;
+		for (i = 0; (c = x->getnext()) != EOF; i++) {
+			if (c == '>')
+				break;
+			if (i + 1 >= sizeof(tmp))
+				goto startignore;
+			tmp[i] = c;
+		}
+		tmp[i] = '\0';
+
+		/* compare against current ignored tag */
+		if (!strcasecmp(t, tmp))
+			isignore = 0;
+		return;
+	}
+
+	if (!strcmp(t, "p") && isclassmatch(classname, STRP("js-tweet-text"))) {
 		if (state & (Item | Stream | Header))
 			state |= Text;
-	} else if (!strcmp(t, "div") && isclassmatch(c, STRP("stream-item-footer"))) {
+	} else if (!strcmp(t, "div") &&
+	           isclassmatch(classname, STRP("stream-item-footer"))) {
 		if (text[0] && username[0])
 			printtweet();
 		state = 0;
-	} else if (!strcmp(t, "li") && isclassmatch(c, STRP("js-stream-item"))) {
+	} else if (!strcmp(t, "li") &&
+	           isclassmatch(classname, STRP("js-stream-item"))) {
 		state |= Item;
 		datatime[0] = text[0] = timestamp[0] = itemfullname[0] = '\0';
 		itemid[0] = itemusername[0] = retweetid[0] = '\0';
 		ispinned = 0;
-		if (isclassmatch(c, STRP("js-pinned")))
+		if (isclassmatch(classname, STRP("js-pinned")))
 			ispinned = 1;
 	} else if (state & Item) {
-		if (!strcmp(t, "div") && isclassmatch(c, STRP("js-stream-tweet"))) {
+		if (!strcmp(t, "div") &&
+		    isclassmatch(classname, STRP("js-stream-tweet"))) {
 			state &= ~(Text|Header);
 			state |= Stream;
-		} else if (!strcmp(t, "a") && isclassmatch(c, STRP("js-action-profile"))) {
+		} else if (!strcmp(t, "a") &&
+		           isclassmatch(classname, STRP("js-action-profile"))) {
 			state |= Header;
-		} else if (!strcmp(t, "span") && isclassmatch(c, STRP("js-short-timestamp"))) {
+		} else if (!strcmp(t, "span") &&
+		          isclassmatch(classname, STRP("js-short-timestamp"))) {
 			state |= Timestamp;
 			strlcpy(timestamp, datatime, sizeof(timestamp));
 			datatime[0] = '\0';
