@@ -109,29 +109,29 @@ xmltagstart(XMLParser *x, const char *t, size_t tl)
 static void
 xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	const char *v = classname;
+	const char *c = classname;
 
-	if (!strcmp(t, "p") && isclassmatch(v, STRP("js-tweet-text"))) {
+	if (!strcmp(t, "p") && isclassmatch(c, STRP("js-tweet-text"))) {
 		if (state & (Item | Stream | Header))
 			state |= Text;
-	} else if (!strcmp(t, "div") && isclassmatch(v, STRP("stream-item-footer"))) {
+	} else if (!strcmp(t, "div") && isclassmatch(c, STRP("stream-item-footer"))) {
 		if (text[0] && username[0])
 			printtweet();
 		state = 0;
-	} else if (!strcmp(t, "li") && isclassmatch(v, STRP("js-stream-item"))) {
+	} else if (!strcmp(t, "li") && isclassmatch(c, STRP("js-stream-item"))) {
 		state |= Item;
 		datatime[0] = text[0] = timestamp[0] = itemfullname[0] = '\0';
 		itemid[0] = itemusername[0] = retweetid[0] = '\0';
 		ispinned = 0;
-		if (isclassmatch(v, STRP("js-pinned")))
+		if (isclassmatch(c, STRP("js-pinned")))
 			ispinned = 1;
 	} else if (state & Item) {
-		if (!strcmp(t, "div") && isclassmatch(v, STRP("js-stream-tweet"))) {
+		if (!strcmp(t, "div") && isclassmatch(c, STRP("js-stream-tweet"))) {
 			state &= ~(Text|Header);
 			state |= Stream;
-		} else if (!strcmp(t, "a") && isclassmatch(v, STRP("js-action-profile"))) {
+		} else if (!strcmp(t, "a") && isclassmatch(c, STRP("js-action-profile"))) {
 			state |= Header;
-		} else if (!strcmp(t, "span") && isclassmatch(v, STRP("js-short-timestamp"))) {
+		} else if (!strcmp(t, "span") && isclassmatch(c, STRP("js-short-timestamp"))) {
 			state |= Timestamp;
 			strlcpy(timestamp, datatime, sizeof(timestamp));
 			datatime[0] = '\0';
