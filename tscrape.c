@@ -38,14 +38,8 @@ static char      classname[256];
 static char      datatime[16];
 static char      itemid[64];
 static char      retweetid[64];
-static int       isignore, state;
+static int       state;
 static XMLParser p;
-
-/* ignored tag, all text between this is interpreted literally and ignored */
-static char *ignoretags[] = {
-        "style",
-        "script",
-};
 
 static void
 printtweet(void)
@@ -100,9 +94,6 @@ html_entitytostr(const char *s, char *buf, size_t bufsiz)
 static void
 xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	if (isignore)
-		return;
-
 	if (!strcmp(t, "p"))
 		state &= ~Text;
 	else if (!strcmp(t, "span"))
@@ -112,51 +103,44 @@ xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 static void
 xmltagstart(XMLParser *x, const char *t, size_t tl)
 {
-	int i;
+	char tmp[64];
+	int c, i;
 
 	classname[0] = '\0';
 
-	for (i = 0; i < sizeof(ignoretags) / sizeof(*ignoretags); i++) {
-		if (!strcasecmp(ignoretags[i], t)) {
-			isignore = 1;
+	/* HACK: ignored tag is parsed, hook into reader and read raw data
+	   until literal end tag (without using the normal parser).
+	   process (buffered) as xml[c]data (no entity) */
+	if (strcasecmp(t, "script") && strcasecmp(t, "style"))
+		return;
+
+startignore:
+	while ((c = x->getnext()) != EOF) {
+		if (c == '<')
 			break;
-		}
 	}
+	if (c == EOF)
+		return;
+	if ((c = x->getnext()) != '/')
+		goto startignore;
+	for (i = 0; (c = x->getnext()) != EOF; i++) {
+		if (c == '>')
+			break;
+		if (i + 1 >= sizeof(tmp))
+			goto startignore;
+		tmp[i] = c;
+	}
+	tmp[i] = '\0';
+
+	/* compare against current ignored tag */
+	if (strcasecmp(t, tmp))
+		goto startignore;
 }
 
 static void
 xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	char tmp[64];
-	int c, i;
-
-	if (isignore) {
-		/* HACK: ignored tag is parsed, hook into reader and read raw data
-		   until literal end tag (without using the normal parser).
-		   process (buffered) as xml[c]data (no entity) */
-startignore:
-		while ((c = x->getnext()) != EOF) {
-			if (c == '<')
-				break;
-		}
-		if (c == EOF)
-			return;
-		if ((c = x->getnext()) != '/')
-			goto startignore;
-		for (i = 0; (c = x->getnext()) != EOF; i++) {
-			if (c == '>')
-				break;
-			if (i + 1 >= sizeof(tmp))
-				goto startignore;
-			tmp[i] = c;
-		}
-		tmp[i] = '\0';
-
-		/* compare against current ignored tag */
-		if (!strcasecmp(t, tmp))
-			isignore = 0;
-		return;
-	}
+	int i;
 
 	if (!strcmp(t, "p") && isclassmatch(classname, STRP("js-tweet-text"))) {
 		if (state & (Item | Stream | Header))
@@ -197,9 +181,6 @@ static void
 xmlattr(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
         const char *v, size_t vl)
 {
-	if (isignore)
-		return;
-
 	/* NOTE: assumes classname attribute is set before data-* in current tag */
 	if (!state && !strcmp(t, "div") && isclassmatch(classname, STRP("user-actions"))) {
 		if (!strcmp(a, "data-screen-name")) {
@@ -255,7 +236,7 @@ xmlattrentity(XMLParser *x, const char *t, size_t tl, const char *a, size_t al,
 	char buf[16];
 	ssize_t len;
 
-	if (!state || isignore)
+	if (!state)
 		return;
 	if ((len = html_entitytostr(v, buf, sizeof(buf))) > 0)
 		xmlattr(x, t, tl, a, al, buf, (size_t)len);
