@@ -100,47 +100,38 @@ xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 		state &= ~(Timestamp);
 }
 
+static char ignoretag[8];
+static XMLParser xo; /* old context */
+
+static void
+xmlignoretagend(XMLParser *p, const char *t, size_t tl, int isshort)
+{
+	if (!strcasecmp(t, ignoretag))
+		memcpy(p, &xo, sizeof(*p)); /* restore context */
+}
+
 static void
 xmltagstart(XMLParser *x, const char *t, size_t tl)
 {
-	char tmp[64];
-	int c, i;
-
 	classname[0] = '\0';
-
-	/* HACK: ignored tag is parsed, hook into reader and read raw data
-	   until literal end tag (without using the normal parser).
-	   process (buffered) as xml[c]data (no entity) */
-	if (strcasecmp(t, "script") && strcasecmp(t, "style"))
-		return;
-
-startignore:
-	while ((c = x->getnext()) != EOF) {
-		if (c == '<')
-			break;
-	}
-	if (c == EOF)
-		return;
-	if ((c = x->getnext()) != '/')
-		goto startignore;
-	for (i = 0; (c = x->getnext()) != EOF; i++) {
-		if (c == '>')
-			break;
-		if (i + 1 >= sizeof(tmp))
-			goto startignore;
-		tmp[i] = c;
-	}
-	tmp[i] = '\0';
-
-	/* compare against current ignored tag */
-	if (strcasecmp(t, tmp))
-		goto startignore;
 }
 
 static void
 xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 {
 	int i;
+
+	/* temporary replace the callback except the reader and end of tag
+	   restore the context once we receive the same ignored tag in the
+	   end tag handler */
+	if (!strcasecmp(t, "script") || !strcasecmp(t, "style")) {
+		strlcpy(ignoretag, t, sizeof(ignoretag));
+		memcpy(&xo, x, sizeof(xo)); /* store old context */
+		memset(x, 0, sizeof(*x));
+		x->xmltagend = xmlignoretagend;
+		x->getnext = xo.getnext;
+		return;
+	}
 
 	if (!strcmp(t, "p") && isclassmatch(classname, STRP("js-tweet-text"))) {
 		if (state & (Item | Stream | Header))
