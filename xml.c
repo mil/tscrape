@@ -1,3 +1,5 @@
+#include <sys/types.h>
+
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
@@ -90,8 +92,7 @@ xml_parseattrs(XMLParser *x)
 					break;
 				}
 			}
-			namelen = 0;
-			endname = 0;
+			namelen = endname = 0;
 		} else if (namelen < sizeof(x->name) - 1) {
 			x->name[namelen++] = c;
 		}
@@ -108,36 +109,41 @@ xml_parseattrs(XMLParser *x)
 static void
 xml_parsecomment(XMLParser *x)
 {
-	static const char *end = "-->";
 	size_t datalen = 0, i = 0;
-	char tmp[4];
 	int c;
 
 	if (x->xmlcommentstart)
 		x->xmlcommentstart(x);
 	while ((c = x->getnext()) != EOF) {
-		if (c == end[i]) {
-			if (end[++i] == '\0') { /* end */
-				x->data[datalen] = '\0';
-				if (x->xmlcomment)
-					x->xmlcomment(x, x->data, datalen);
-				if (x->xmlcommentend)
-					x->xmlcommentend(x);
-				return;
-			}
-		} else if (i) {
+		if (c == '-' || c == '>') {
 			if (x->xmlcomment) {
 				x->data[datalen] = '\0';
-				if (datalen)
-					x->xmlcomment(x, x->data, datalen);
-				memcpy(tmp, end, i);
-				tmp[i] = '\0';
-				x->xmlcomment(x, tmp, i);
+				x->xmlcomment(x, x->data, datalen);
+				datalen = 0;
+			}
+		}
+
+		if (c == '-') {
+			if (++i > 2) {
+				if (x->xmlcomment)
+					for (; i > 2; i--)
+						x->xmlcomment(x, "-", 1);
+				i = 2;
+			}
+			continue;
+		} else if (c == '>' && i == 2) {
+			if (x->xmlcommentend)
+				x->xmlcommentend(x);
+			return;
+		} else if (i) {
+			if (x->xmlcomment) {
+				for (; i > 0; i--)
+					x->xmlcomment(x, "-", 1);
 			}
 			i = 0;
-			x->data[0] = c;
-			datalen = 1;
-		} else if (datalen < sizeof(x->data) - 1) {
+		}
+
+		if (datalen < sizeof(x->data) - 1) {
 			x->data[datalen++] = c;
 		} else {
 			x->data[datalen] = '\0';
@@ -152,36 +158,40 @@ xml_parsecomment(XMLParser *x)
 static void
 xml_parsecdata(XMLParser *x)
 {
-	static const char *end = "]]>";
 	size_t datalen = 0, i = 0;
-	char tmp[4];
 	int c;
 
 	if (x->xmlcdatastart)
 		x->xmlcdatastart(x);
 	while ((c = x->getnext()) != EOF) {
-		if (c == end[i]) {
-			if (end[++i] == '\0') { /* end */
-				x->data[datalen] = '\0';
-				if (x->xmlcdata)
-					x->xmlcdata(x, x->data, datalen);
-				if (x->xmlcdataend)
-					x->xmlcdataend(x);
-				return;
-			}
-		} else if (i) {
-			x->data[datalen] = '\0';
+		if (c == ']' || c == '>') {
 			if (x->xmlcdata) {
-				if (datalen)
-					x->xmlcdata(x, x->data, datalen);
-				memcpy(tmp, end, i);
-				tmp[i] = '\0';
-				x->xmlcdata(x, tmp, i);
+				x->data[datalen] = '\0';
+				x->xmlcdata(x, x->data, datalen);
+				datalen = 0;
 			}
+		}
+
+		if (c == ']') {
+			if (++i > 2) {
+				if (x->xmlcdata)
+					for (; i > 2; i--)
+						x->xmlcdata(x, "]", 1);
+				i = 2;
+			}
+			continue;
+		} else if (c == '>' && i == 2) {
+			if (x->xmlcdataend)
+				x->xmlcdataend(x);
+			return;
+		} else if (i) {
+			if (x->xmlcdata)
+				for (; i > 0; i--)
+					x->xmlcdata(x, "]", 1);
 			i = 0;
-			x->data[0] = c;
-			datalen = 1;
-		} else if (datalen < sizeof(x->data) - 1) {
+		}
+
+		if (datalen < sizeof(x->data) - 1) {
 			x->data[datalen++] = c;
 		} else {
 			x->data[datalen] = '\0';
@@ -221,7 +231,7 @@ xml_codepointtoutf8(uint32_t cp, uint32_t *utf)
 ssize_t
 xml_namedentitytostr(const char *e, char *buf, size_t bufsiz)
 {
-	const struct {
+	static const struct {
 		char *entity;
 		int c;
 	} entities[] = {
@@ -268,7 +278,7 @@ xml_numericentitytostr(const char *e, char *buf, size_t bufsiz)
 		return -1;
 
 	/* not a numeric entity */
-	if (!(e[0] == '&' && e[1] == '#'))
+	if (e[0] != '&' || e[1] != '#')
 		return 0;
 
 	/* e[1] == '#', numeric / hexadecimal entity */
