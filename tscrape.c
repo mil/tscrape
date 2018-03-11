@@ -119,8 +119,6 @@ xmltagstart(XMLParser *x, const char *t, size_t tl)
 static void
 xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 {
-	int i;
-
 	/* temporary replace the callback except the reader and end of tag
 	   restore the context once we receive the same ignored tag in the
 	   end tag handler */
