@@ -1,14 +1,14 @@
-.Dd April 23, 2016
+.Dd May 11, 2018
 .Dt TSCRAPE 1
 .Os
 .Sh NAME
 .Nm tscrape
-.Nd twitter scraper
+.Nd Twitter scraper
 .Sh SYNOPSIS
 .Nm
 .Sh DESCRIPTION
 .Nm
-reads the twitter HTML page and scrapes the data into a
+reads the Twitter HTML page and scrapes the data into a
 TAB-separated format to stdout.
 .Sh TAB-SEPARATED FORMAT FIELDS
 The items are saved in a TSV-like format. Control characters are replaced
@@ -20,12 +20,22 @@ The order and format of the fields are:
 UNIX timestamp in UTC+0.
 .It timestamp
 Local date and time in the format: YYYY-mm-dd HH:MM.
-.It tweet text
-Tweet text.
 .It username
 Twitter username (can be a retweet).
 .It fullname
 Twitter fullname (can be a retweet).
+.It tweet text
+Tweet text.
+.It item id
+Item id.
+.It item username
+Item username.
+.It item fullname
+Item fullname.
+.It item retweetid
+Item Retweet ID.
+.It item is pinned
+Item is pinned or not? 0 or 1.
 .El
 .Sh EXAMPLES
 .Bd -literal -offset left
