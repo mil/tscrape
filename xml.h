@@ -31,14 +31,10 @@ typedef struct xmlparser {
 	/* current tag is in short form ? <tag /> */
 	int isshorttag;
 	/* current attribute name */
-	char name[256];
+	char name[1024];
 	/* data buffer used for tag data, cdata and attribute data */
 	char data[BUFSIZ];
 } XMLParser;
 
-int     xml_codepointtoutf8(uint32_t, uint32_t *);
-ssize_t xml_entitytostr(const char *, char *, size_t);
-ssize_t xml_namedentitytostr(const char *, char *, size_t);
-ssize_t xml_numericentitytostr(const char *, char *, size_t);
-
-void    xml_parse(XMLParser *);
+int xml_entitytostr(const char *, char *, size_t);
+void xml_parse(XMLParser *);

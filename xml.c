@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,19 +13,20 @@ static void
 xml_parseattrs(XMLParser *x)
 {
 	size_t namelen = 0, valuelen;
-	int c, endsep, endname = 0;
+	int c, endsep, endname = 0, valuestart = 0;
 
 	while ((c = x->getnext()) != EOF) {
-		if (isspace(c)) { /* TODO: simplify endname ? */
+		if (isspace(c)) {
 			if (namelen)
 				endname = 1;
 			continue;
-		}
-		if (c == '?')
+		} else if (c == '?')
 			; /* ignore */
 		else if (c == '=') {
 			x->name[namelen] = '\0';
-		} else if (namelen && ((endname && isalpha(c)) || (c == '>' || c == '/'))) {
+			valuestart = 1;
+			endname = 1;
+		} else if (namelen && ((endname && !valuestart && isalpha(c)) || (c == '>' || c == '/'))) {
 			/* attribute without value */
 			x->name[namelen] = '\0';
 			if (x->xmlattrstart)
@@ -38,12 +38,21 @@ xml_parseattrs(XMLParser *x)
 			endname = 0;
 			x->name[0] = c;
 			namelen = 1;
-		} else if (namelen && (c == '\'' || c == '"')) {
+		} else if (namelen && valuestart) {
 			/* attribute with value */
-			endsep = c; /* c is end separator */
 			if (x->xmlattrstart)
 				x->xmlattrstart(x, x->tag, x->taglen, x->name, namelen);
-			for (valuelen = 0; (c = x->getnext()) != EOF;) {
+
+			valuelen = 0;
+			if (c == '\'' || c == '"') {
+				endsep = c;
+			} else {
+				endsep = ' '; /* isspace() */
+				goto startvalue;
+			}
+
+			while ((c = x->getnext()) != EOF) {
+startvalue:
 				if (c == '&') { /* entities */
 					x->data[valuelen] = '\0';
 					/* call data function with data before entity if there is data */
@@ -52,16 +61,17 @@ xml_parseattrs(XMLParser *x)
 					x->data[0] = c;
 					valuelen = 1;
 					while ((c = x->getnext()) != EOF) {
-						if (c == endsep)
+						if (c == endsep || (endsep == ' ' && (c == '>' || isspace(c))))
 							break;
 						if (valuelen < sizeof(x->data) - 1)
 							x->data[valuelen++] = c;
 						else {
-							/* TODO: entity too long? this should be very strange. */
+							/* entity too long for buffer, handle as normal data */
 							x->data[valuelen] = '\0';
 							if (x->xmlattr)
 								x->xmlattr(x, x->tag, x->taglen, x->name, namelen, x->data, valuelen);
-							valuelen = 0;
+							x->data[0] = c;
+							valuelen = 1;
 							break;
 						}
 						if (c == ';') {
@@ -72,7 +82,7 @@ xml_parseattrs(XMLParser *x)
 							break;
 						}
 					}
-				} else if (c != endsep) {
+				} else if (c != endsep && !(endsep == ' ' && (c == '>' || isspace(c)))) {
 					if (valuelen < sizeof(x->data) - 1) {
 						x->data[valuelen++] = c;
 					} else {
@@ -83,7 +93,7 @@ xml_parseattrs(XMLParser *x)
 						valuelen = 1;
 					}
 				}
-				if (c == endsep) {
+				if (c == endsep || (endsep == ' ' && (c == '>' || isspace(c)))) {
 					x->data[valuelen] = '\0';
 					if (x->xmlattr)
 						x->xmlattr(x, x->tag, x->taglen, x->name, namelen, x->data, valuelen);
@@ -92,7 +102,7 @@ xml_parseattrs(XMLParser *x)
 					break;
 				}
 			}
-			namelen = endname = 0;
+			namelen = endname = valuestart = 0;
 		} else if (namelen < sizeof(x->name) - 1) {
 			x->name[namelen++] = c;
 		}
@@ -100,8 +110,8 @@ xml_parseattrs(XMLParser *x)
 			break;
 		} else if (c == '/') {
 			x->isshorttag = 1;
-			namelen = 0;
 			x->name[0] = '\0';
+			namelen = 0;
 		}
 	}
 }
@@ -203,48 +213,53 @@ xml_parsecdata(XMLParser *x)
 	}
 }
 
-int
-xml_codepointtoutf8(uint32_t cp, uint32_t *utf)
+static int
+codepointtoutf8(long r, char *s)
 {
-	if (cp >= 0x10000) {
-		/* 4 bytes */
-		*utf = 0xf0808080 | ((cp & 0xfc0000) << 6) |
-		       ((cp & 0x3f000) << 4) | ((cp & 0xfc0) << 2) |
-		       (cp & 0x3f);
-		return 4;
-	} else if (cp >= 0x00800) {
-		/* 3 bytes */
-		*utf = 0xe08080 |
-		       ((cp & 0x3f000) << 4) | ((cp & 0xfc0) << 2) |
-		       (cp & 0x3f);
-		return 3;
-	} else if (cp >= 0x80) {
-		/* 2 bytes */
-		*utf = 0xc080 |
-		       ((cp & 0xfc0) << 2) | (cp & 0x3f);
+	if (r == 0) {
+		return 0; /* NUL byte */
+	} else if (r <= 0x7F) {
+		/* 1 byte: 0aaaaaaa */
+		s[0] = r;
+		return 1;
+	} else if (r <= 0x07FF) {
+		/* 2 bytes: 00000aaa aabbbbbb */
+		s[0] = 0xC0 | ((r & 0x0007C0) >>  6); /* 110aaaaa */
+		s[1] = 0x80 |  (r & 0x00003F);        /* 10bbbbbb */
 		return 2;
+	} else if (r <= 0xFFFF) {
+		/* 3 bytes: aaaabbbb bbcccccc */
+		s[0] = 0xE0 | ((r & 0x00F000) >> 12); /* 1110aaaa */
+		s[1] = 0x80 | ((r & 0x000FC0) >>  6); /* 10bbbbbb */
+		s[2] = 0x80 |  (r & 0x00003F);        /* 10cccccc */
+		return 3;
+	} else {
+		/* 4 bytes: 000aaabb bbbbcccc ccdddddd */
+		s[0] = 0xF0 | ((r & 0x1C0000) >> 18); /* 11110aaa */
+		s[1] = 0x80 | ((r & 0x03F000) >> 12); /* 10bbbbbb */
+		s[2] = 0x80 | ((r & 0x000FC0) >>  6); /* 10cccccc */
+		s[3] = 0x80 |  (r & 0x00003F);        /* 10dddddd */
+		return 4;
 	}
-	*utf = cp & 0xff;
-	return *utf ? 1 : 0; /* 1 byte */
 }
 
-ssize_t
-xml_namedentitytostr(const char *e, char *buf, size_t bufsiz)
+static int
+namedentitytostr(const char *e, char *buf, size_t bufsiz)
 {
 	static const struct {
 		char *entity;
 		int c;
 	} entities[] = {
-		{ .entity = "&amp;",  .c = '&'  },
-		{ .entity = "&lt;",   .c = '<'  },
-		{ .entity = "&gt;",   .c = '>'  },
-		{ .entity = "&apos;", .c = '\'' },
-		{ .entity = "&quot;", .c = '"'  },
-		{ .entity = "&AMP;",  .c = '&'  },
-		{ .entity = "&LT;",   .c = '<'  },
-		{ .entity = "&GT;",   .c = '>'  },
-		{ .entity = "&APOS;", .c = '\'' },
-		{ .entity = "&QUOT;", .c = '"'  }
+		{ "&amp;",  '&'  },
+		{ "&lt;",   '<'  },
+		{ "&gt;",   '>'  },
+		{ "&apos;", '\'' },
+		{ "&quot;", '"'  },
+		{ "&AMP;",  '&'  },
+		{ "&LT;",   '<'  },
+		{ "&GT;",   '>'  },
+		{ "&APOS;", '\'' },
+		{ "&QUOT;", '"'  }
 	};
 	size_t i;
 
@@ -266,11 +281,11 @@ xml_namedentitytostr(const char *e, char *buf, size_t bufsiz)
 	return 0;
 }
 
-ssize_t
-xml_numericentitytostr(const char *e, char *buf, size_t bufsiz)
+static int
+numericentitytostr(const char *e, char *buf, size_t bufsiz)
 {
-	uint32_t l = 0, cp = 0;
-	size_t b, len;
+	long l;
+	int len;
 	char *end;
 
 	/* buffer is too small */
@@ -289,21 +304,18 @@ xml_numericentitytostr(const char *e, char *buf, size_t bufsiz)
 		l = strtoul(e + 1, &end, 16);
 	else
 		l = strtoul(e, &end, 10);
-	/* invalid value or not a well-formed entity */
-	if (errno || *end != ';')
+	/* invalid value or not a well-formed entity or too high codepoint */
+	if (errno || *end != ';' || l > 0x10FFFF)
 		return 0;
-	len = xml_codepointtoutf8(l, &cp);
-	/* make string */
-	for (b = 0; b < len; b++)
-		buf[b] = (cp >> (8 * (len - 1 - b))) & 0xff;
+	len = codepointtoutf8(l, buf);
 	buf[len] = '\0';
 
-	return (ssize_t)len;
+	return len;
 }
 
 /* convert named- or numeric entity string to buffer string
  * returns byte-length of string. */
-ssize_t
+int
 xml_entitytostr(const char *e, char *buf, size_t bufsiz)
 {
 	/* buffer is too small */
@@ -314,9 +326,9 @@ xml_entitytostr(const char *e, char *buf, size_t bufsiz)
 		return 0;
 	/* named entity */
 	if (e[1] != '#')
-		return xml_namedentitytostr(e, buf, bufsiz);
+		return namedentitytostr(e, buf, bufsiz);
 	else /* numeric entity */
-		return xml_numericentitytostr(e, buf, bufsiz);
+		return numericentitytostr(e, buf, bufsiz);
 }
 
 void
@@ -334,12 +346,12 @@ xml_parse(XMLParser *x)
 		if (c == '<') { /* parse tag */
 			if ((c = x->getnext()) == EOF)
 				return;
-			x->tag[0] = '\0';
-			x->taglen = 0;
+
 			if (c == '!') { /* cdata and comments */
 				for (tagdatalen = 0; (c = x->getnext()) != EOF;) {
-					if (tagdatalen <= sizeof("[CDATA[") - 1) /* if (d < sizeof(x->data)) */
-						x->data[tagdatalen++] = c; /* TODO: prevent overflow */
+					/* NOTE: sizeof(x->data) must be atleast sizeof("[CDATA[") */
+					if (tagdatalen <= sizeof("[CDATA[") - 1)
+						x->data[tagdatalen++] = c;
 					if (c == '>')
 						break;
 					else if (c == '-' && tagdatalen == sizeof("--") - 1 &&
@@ -355,6 +367,9 @@ xml_parse(XMLParser *x)
 					}
 				}
 			} else {
+				x->tag[0] = '\0';
+				x->taglen = 0;
+
 				/* normal tag (open, short open, close), processing instruction. */
 				if (isspace(c))
 					while ((c = x->getnext()) != EOF && isspace(c))
@@ -366,7 +381,7 @@ xml_parse(XMLParser *x)
 				x->isshorttag = ispi;
 				taglen = 1;
 				while ((c = x->getnext()) != EOF) {
-					if (c == '/') /* TODO: simplify short tag? */
+					if (c == '/')
 						x->isshorttag = 1; /* short tag */
 					else if (c == '>' || isspace(c)) {
 						x->tag[taglen] = '\0';
@@ -389,7 +404,7 @@ xml_parse(XMLParser *x)
 							x->xmltagend(x, x->tag, x->taglen, 1);
 						break;
 					} else if (taglen < sizeof(x->tag) - 1)
-						x->tag[taglen++] = c;
+						x->tag[taglen++] = c; /* NOTE: tag name truncation */
 				}
 			}
 		} else {
@@ -411,9 +426,16 @@ xml_parse(XMLParser *x)
 							break;
 						if (datalen < sizeof(x->data) - 1)
 							x->data[datalen++] = c;
-						if (isspace(c))
+						else {
+							/* entity too long for buffer, handle as normal data */
+							x->data[datalen] = '\0';
+							if (x->xmldata)
+								x->xmldata(x, x->data, datalen);
+							x->data[0] = c;
+							datalen = 1;
 							break;
-						else if (c == ';') {
+						}
+						if (c == ';') {
 							x->data[datalen] = '\0';
 							if (x->xmldataentity)
 								x->xmldataentity(x, x->data, datalen);
