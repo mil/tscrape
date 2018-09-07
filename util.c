@@ -111,13 +111,13 @@ printescape(const char *s)
 	const char *e;
 
 	/* strip leading and trailing white-space */
-	for (; *s && isspace(*s); s++)
+	for (; *s && isspace((unsigned char)*s); s++)
 		;
-	for (e = s + strlen(s); e > s && isspace(*(e - 1)); e--)
+	for (e = s + strlen(s); e > s && isspace((unsigned char)*(e - 1)); e--)
 		;
 
 	for (i = 0; *s && s < e; s++) {
-		if (iscntrl(*s) || isspace(*s)) {
+		if (iscntrl((unsigned char)*s) || isspace((unsigned char)*s)) {
 			i++;
 			continue;
 		}
