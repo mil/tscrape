@@ -74,7 +74,8 @@ isclassmatch(const char *classes, const char *clss, size_t len)
 
 	if (!(p = strstr(classes, clss)))
 		return 0;
-	return (p == classes || isspace(p[-1])) && (isspace(p[len]) || !p[len]);
+	return (p == classes || isspace((unsigned char)p[-1])) &&
+	        (isspace((unsigned char)p[len]) || !p[len]);
 }
 
 /* convert XML and some HTML entities */
@@ -161,7 +162,7 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 			datatime[0] = '\0';
 		}
 	}
-	if ((state & Text) && !strcmp(t, "a") && !isspace(text[0]))
+	if ((state & Text) && !strcmp(t, "a") && !isspace((unsigned char)text[0]))
 		strlcat(text, " ", sizeof(text));
 }
 
