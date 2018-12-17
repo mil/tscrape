@@ -22,6 +22,3 @@ LDFLAGS = -s
 #LDFLAGS = -static -s
 
 CPPFLAGS = -D_DEFAULT_SOURCE
-
-# OpenBSD 5.9+: use pledge(2)
-#CPPFLAGS += -DUSE_PLEDGE
