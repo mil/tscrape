@@ -98,10 +98,6 @@ feed() {
 	fi) &
 }
 
-terminated() {
-	isrunning="0"
-}
-
 cleanup() {
 	# remove temporary files
 	rm -rf "${tscrapetmpdir}"
