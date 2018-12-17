@@ -40,6 +40,34 @@ static char      retweetid[64];
 static int       state;
 static XMLParser p;
 
+static const char *ignorestate, *endtag;
+static int (*getnext)(void);
+
+/* return a space for all data until some case-insensitive string occurs. This
+   is used to parse incorrect HTML/XML that contains unescaped HTML in script
+   or style tags. If you see some </script> tag in a CDATA or comment
+   section then e-mail W3C and tell them the web is too complex. */
+static inline int
+getchar_ignore(void)
+{
+	int c;
+
+	if ((c = getnext()) == EOF)
+		return EOF;
+
+	if (tolower(c) == tolower((unsigned char)*ignorestate)) {
+		ignorestate++;
+		if (*ignorestate == '\0') {
+			p.getnext = getnext; /* restore */
+			return c;
+		}
+	} else {
+		ignorestate = endtag;
+	}
+
+	return ' ';
+}
+
 static void
 printtweet(void)
 {
@@ -100,16 +128,6 @@ xmltagend(XMLParser *x, const char *t, size_t tl, int isshort)
 		state &= ~(Timestamp);
 }
 
-static char ignoretag[8];
-static XMLParser xo; /* old context */
-
-static void
-xmlignoretagend(XMLParser *p, const char *t, size_t tl, int isshort)
-{
-	if (!strcasecmp(t, ignoretag))
-		memcpy(p, &xo, sizeof(*p)); /* restore context */
-}
-
 static void
 xmltagstart(XMLParser *x, const char *t, size_t tl)
 {
@@ -122,12 +140,15 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 	/* temporary replace the callback except the reader and end of tag
 	   restore the context once we receive the same ignored tag in the
 	   end tag handler */
-	if (!strcasecmp(t, "script") || !strcasecmp(t, "style")) {
-		strlcpy(ignoretag, t, sizeof(ignoretag));
-		memcpy(&xo, x, sizeof(xo)); /* store old context */
-		memset(x, 0, sizeof(*x));
-		x->xmltagend = xmlignoretagend;
-		x->getnext = xo.getnext;
+	if (!strcasecmp(t, "script")) {
+		ignorestate = endtag = "</script>";
+		getnext = x->getnext; /* for restore */
+		x->getnext = getchar_ignore;
+		return;
+	} else if (!strcasecmp(t, "style")) {
+		ignorestate = endtag = "</style>";
+		getnext = x->getnext; /* for restore */
+		x->getnext = getchar_ignore;
 		return;
 	}
 
