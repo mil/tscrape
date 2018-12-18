@@ -48,7 +48,7 @@ static int (*getnext)(void);
    or style tags. If you see some </script> tag in a CDATA or comment
    section then e-mail W3C and tell them the web is too complex. */
 static inline int
-getchar_ignore(void)
+getnext_ignore(void)
 {
 	int c;
 
@@ -143,12 +143,12 @@ xmltagstartparsed(XMLParser *x, const char *t, size_t tl, int isshort)
 	if (!strcasecmp(t, "script")) {
 		ignorestate = endtag = "</script>";
 		getnext = x->getnext; /* for restore */
-		x->getnext = getchar_ignore;
+		x->getnext = getnext_ignore;
 		return;
 	} else if (!strcasecmp(t, "style")) {
 		ignorestate = endtag = "</style>";
 		getnext = x->getnext; /* for restore */
-		x->getnext = getchar_ignore;
+		x->getnext = getnext_ignore;
 		return;
 	}
 
