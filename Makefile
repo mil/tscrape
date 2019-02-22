@@ -2,6 +2,7 @@ include config.mk
 
 NAME = tscrape
 VERSION = 0.1
+
 BIN = \
 	tscrape\
 	tscrape_html\
@@ -44,10 +45,10 @@ OBJ = ${SRC:.c=.o} ${LIBXMLOBJ} ${LIBUTILOBJ}
 ${OBJ}: config.mk ${HDR}
 
 .o:
-	${CC} ${LDFLAGS} -o $@ $< ${LIB}
+	${CC} ${TSCRAPE_LDFLAGS} -o $@ $< ${LIB}
 
 .c.o:
-	${CC} ${CFLAGS} ${CPPFLAGS} -o $@ -c $<
+	${CC} ${TSCRAPE_CFLAGS} ${TSCRAPE_CPPFLAGS} -o $@ -c $<
 
 ${LIBUTIL}: ${LIBUTILOBJ}
 	${AR} rc $@ $?
@@ -79,11 +80,11 @@ install: all
 	cp -f ${BIN} ${SCRIPTS} "${DESTDIR}${PREFIX}/bin"
 	for f in $(BIN) $(SCRIPTS); do chmod 755 "${DESTDIR}${PREFIX}/bin/$$f"; done
 	# installing example files.
-	mkdir -p "${DESTDIR}${PREFIX}/share/${NAME}"
+	mkdir -p "${DESTDIR}${DOCPREFIX}"
 	cp -f tscraperc.example\
 		style.css\
 		README\
-		"${DESTDIR}${PREFIX}/share/${NAME}"
+		"${DESTDIR}${DOCPREFIX}"
 	# installing manual pages for tools.
 	mkdir -p "${DESTDIR}${MANPREFIX}/man1"
 	cp -f ${MAN1} "${DESTDIR}${MANPREFIX}/man1"
@@ -94,10 +95,10 @@ uninstall:
 	for f in $(BIN) $(SCRIPTS); do rm -f "${DESTDIR}${PREFIX}/bin/$$f"; done
 	# removing example files.
 	rm -f \
-		"${DESTDIR}${PREFIX}/share/${NAME}/tscraperc.example"\
-		"${DESTDIR}${PREFIX}/share/${NAME}/style.css"\
-		"${DESTDIR}${PREFIX}/share/${NAME}/README"
-	-rmdir "${DESTDIR}${PREFIX}/share/${NAME}"
+		"${DESTDIR}${DOCPREFIX}/tscraperc.example"\
+		"${DESTDIR}${DOCPREFIX}/style.css"\
+		"${DESTDIR}${DOCPREFIX}/README"
+	-rmdir "${DESTDIR}${DOCPREFIX}"
 	# removing manual pages.
 	for m in $(MAN1); do rm -f "${DESTDIR}${MANPREFIX}/man1/$$m"; done
 
