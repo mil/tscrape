@@ -30,8 +30,7 @@ MAN1 = tscrape.1
 
 DOC = \
 	LICENSE\
-	README\
-	TODO
+	README
 HDR = \
 	util.h\
 	xml.h
