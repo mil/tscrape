@@ -12,7 +12,25 @@ $ make
 Usage
 -----
 
-curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere' | tscrape
+	curl --http1.0 -H 'User-Agent:' -s 'https://twitter.com/namehere' | tscrape
+
+or
+
+	ftp -o - -U '' 'https://twitter.com/namehere' 2>/dev/null | tscrape
+
+or
+
+	hurl 'https://twitter.com/namehere' | tscrape
+
+
+Using sfeed to convert the tscrape TSV output to an Atom feed:
+
+	hurl 'https://twitter.com/namehere' | tscrape | \
+	LC_ALL=C awk 'BEGIN { OFS = FS = "\t"; }
+	{
+		print $1 OFS $4 OFS "https://twitter.com/" $6 "/status/" $5  \
+			OFS "" OFS "" OFS $5 OFS $7 OFS "";
+	}' | sfeed_atom
 
 
 Why
