@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <time.h>
+
 #ifdef __OpenBSD__
 #include <unistd.h>
 #else
@@ -10,8 +11,6 @@
 size_t strlcat(char *, const char *, size_t);
 #undef strlcpy
 size_t strlcpy(char *, const char *, size_t);
-
-#define ISUTF8(c) (((c) & 0xc0) != 0x80)
 
 /* feed info */
 struct feed {
