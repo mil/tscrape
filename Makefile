@@ -1,3 +1,5 @@
+.POSIX:
+
 include config.mk
 
 NAME = tscrape
@@ -11,11 +13,12 @@ SCRIPTS = \
 	tscrape_update
 
 SRC = ${BIN:=.c}
+HDR = \
+	util.h\
+	xml.h
 
 LIBUTIL = libutil.a
 LIBUTILSRC = \
-	strlcat.c\
-	strlcpy.c\
 	util.c
 LIBUTILOBJ = ${LIBUTILSRC:.c=.o}
 
@@ -24,22 +27,25 @@ LIBXMLSRC = \
 	xml.c
 LIBXMLOBJ = ${LIBXMLSRC:.c=.o}
 
-LIB = ${LIBUTIL} ${LIBXML}
+COMPATSRC = \
+	strlcat.c\
+	strlcpy.c
+COMPATOBJ =\
+	strlcat.o\
+	strlcpy.o
+
+LIB = ${LIBUTIL} ${LIBXML} ${COMPATOBJ}
 
 MAN1 = tscrape.1
-
 DOC = \
 	LICENSE\
 	README
-HDR = \
-	util.h\
-	xml.h
 
 all: $(BIN)
 
 ${BIN}: ${LIB} ${@:=.o}
 
-OBJ = ${SRC:.c=.o} ${LIBXMLOBJ} ${LIBUTILOBJ}
+OBJ = ${SRC:.c=.o} ${LIBXMLOBJ} ${LIBUTILOBJ} ${COMPATOBJ}
 
 ${OBJ}: config.mk ${HDR}
 
@@ -61,7 +67,7 @@ dist:
 	rm -rf "${NAME}-${VERSION}"
 	mkdir -p "${NAME}-${VERSION}"
 	cp -f ${MAN1} ${DOC} ${HDR} \
-		${SRC} ${LIBXMLSRC} ${LIBUTILSRC} ${SCRIPTS} \
+		${SRC} ${LIBXMLSRC} ${LIBUTILSRC} ${COMPATSRC} ${SCRIPTS} \
 		Makefile config.mk \
 		tscraperc.example style.css \
 		"${NAME}-${VERSION}"
