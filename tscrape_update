@@ -53,7 +53,7 @@ order() {
 # fetchfeed(name, url, feedfile)
 fetchfeed() {
 	if curl --http1.0 -L --max-redirs 0 -H "User-Agent:" -f -s -m 15 \
-		-z "$3" "$2" 2>/dev/null; then
+		"$2" 2>/dev/null; then
 		printf "  OK %s %s\n" "$(date +'%H:%M:%S')" "$1" >&2
 	else
 		printf "FAIL %s %s\n" "$(date +'%H:%M:%S')" "$1" >&2
