@@ -31,10 +31,17 @@ loadconfig() {
 	fi
 }
 
-# merge raw files: unique sort by id, retweetid.
-# merge(name, oldfile, newfile)
-merge() {
-	sort -t '	' -u -k5,5 -k8,8 "$2" "$3" 2>/dev/null
+# log(name,s)
+log() {
+	printf '[%s] %-50.50s %s\n' "$(date +'%H:%M:%S')" "$1" "$2" >&2
+}
+
+# fetch a feed via HTTP/HTTPS etc.
+# fetch(name, url, feedfile)
+fetch() {
+	# fail on redirects, hide User-Agent, timeout is 15 seconds.
+	curl -L --max-redirs 0 -H "User-Agent:" -f -s -m 15 \
+		"$2" 2>/dev/null
 }
 
 # filter fields.
@@ -49,15 +56,10 @@ order() {
 	sort -t '	' -k1rn,1
 }
 
-# fetch a feed via HTTP/HTTPS etc.
-# fetchfeed(name, url, feedfile)
-fetchfeed() {
-	if curl --http1.0 -L --max-redirs 0 -H "User-Agent:" -f -s -m 15 \
-		"$2" 2>/dev/null; then
-		printf "  OK %s %s\n" "$(date +'%H:%M:%S')" "$1" >&2
-	else
-		printf "FAIL %s %s\n" "$(date +'%H:%M:%S')" "$1" >&2
-	fi
+# merge raw files: unique sort by id, retweetid.
+# merge(name, oldfile, newfile)
+merge() {
+	sort -t '	' -u -k5,5 -k8,8 "$2" "$3" 2>/dev/null
 }
 
 # fetch and parse feed.
@@ -73,33 +75,65 @@ feed() {
 	(name="$1"
 	filename="$(printf '%s' "$1" | tr '/' '_')"
 	feedurl="$2"
-	tmpfeedfile="${tscrapetmpdir}/${filename}"
-	tmpencfile=""
+
 	tscrapefile="${tscrapepath}/${filename}"
+	tmpfeedfile="${tscrapetmpdir}/${filename}"
 
-	fetchfeed "${name}" "${feedurl}" "${tscrapefile}" | \
-		tscrape | filter "${name}" > "${tmpfeedfile}"
+	if ! fetch "${name}" "${feedurl}" "${tscrapefile}" > "${tmpfeedfile}.fetch"; then
+		log "${name}" "FAIL (FETCH)"
+		return
+	fi
 
-	# get new data and merge with old.
-	tscrapefilenew="${tscrapepath}/${filename}.new"
-	# new feed data is non-empty.
-	if [ -s "${tmpfeedfile}" ]; then
-		# if file exists, merge
-		if [ -e "${tscrapefile}" ]; then
-			merge "${name}" "${tscrapefile}" "${tmpfeedfile}" | \
-				order "${name}" > "${tscrapefilenew}"
+	if ! tscrape < "${tmpfeedfile}.fetch" > "${tmpfeedfile}.tsv"; then
+		log "${name}" "FAIL (CONVERT)"
+		return
+	fi
+	rm -f "${tmpfeedfile}.fetch"
 
-			# overwrite old file with updated file
-			mv "${tscrapefilenew}" "${tscrapefile}"
-		else
-			merge "${name}" "/dev/null" "${tmpfeedfile}" | \
-				order "${name}" > "${tscrapefile}"
-		fi
-	fi) &
+	if ! filter "${name}" < "${tmpfeedfile}.tsv" > "${tmpfeedfile}.filter"; then
+		log "${name}" "FAIL (FILTER)"
+		return
+	fi
+	rm -f "${tmpfeedfile}.tsv"
+
+	# new feed data is empty: no need for below stages.
+	if [ ! -s "${tmpfeedfile}.filter" ]; then
+		log "${name}" "OK"
+		return
+	fi
+
+	# if file does not exist yet "merge" with /dev/null.
+	if [ -e "${tscrapefile}" ]; then
+		oldfile="${tscrapefile}"
+	else
+		oldfile="/dev/null"
+	fi
+
+	if ! merge "${name}" "${oldfile}" "${tmpfeedfile}.filter" > "${tmpfeedfile}.merge"; then
+		log "${name}" "FAIL (MERGE)"
+		return
+	fi
+	rm -f "${tmpfeedfile}.filter"
+
+	if ! order "${name}" < "${tmpfeedfile}.merge" > "${tmpfeedfile}.order"; then
+		log "${name}" "FAIL (ORDER)"
+		return
+	fi
+	rm -f "${tmpfeedfile}.merge"
+
+	# atomic move.
+	if ! mv "${tmpfeedfile}.order" "${tscrapefile}"; then
+		log "${name}" "FAIL (MOVE)"
+		return
+	fi
+
+	# OK
+	log "${name}" "OK"
+	) &
 }
 
 cleanup() {
-	# remove temporary files
+	# remove temporary directory with files.
 	rm -rf "${tscrapetmpdir}"
 }
 
