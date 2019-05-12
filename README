@@ -1,9 +1,17 @@
-tscrape - twitter (sc)raper
-===========================
-
-
-Install
+tscrape
 -------
+
+Twitter feed HTML scraper.
+
+It scrapes HTML from stdin and outputs it to a TAB-separated format that can be
+easier parsed with various (UNIX) tools. There are formatting programs included
+to convert this TAB-separated format to various other formats. There are also
+some programs and scripts included to import and export OPML and to update,
+sort, filter and merge feed items.
+
+
+Build and install
+-----------------
 
 $ make
 # make install
@@ -39,6 +47,25 @@ Why
 Twitter removed the functionality to follow users using a RSS feed without
 authenticating or using their API. With this program you can format tweets in
 any way you like relatively anonymously.
+
+
+Dependencies
+------------
+
+- C compiler (C99).
+- libc (recommended: C99 and POSIX >= 200809).
+
+
+Optional dependencies
+---------------------
+
+- POSIX make(1) (for Makefile).
+- POSIX sh(1),
+  used by tscrape_update(1).
+- curl(1) binary: https://curl.haxx.se/ ,
+  used by tscrape_update(1), can be replaced with any tool like wget(1),
+  OpenBSD ftp(1) or hurl(1): https://git.codemadness.org/hurl/
+- mandoc for documentation: https://mdocml.bsd.lv/
 
 
 License
