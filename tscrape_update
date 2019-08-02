@@ -50,23 +50,23 @@ filter() {
 	cat
 }
 
-# order by timestamp (descending).
-# order(name)
-order() {
-	sort -t '	' -k1rn,1
-}
-
 # merge raw files: unique sort by id, retweetid.
 # merge(name, oldfile, newfile)
 merge() {
 	sort -t '	' -u -k5,5 -k8,8 "$2" "$3" 2>/dev/null
 }
 
+# order by timestamp (descending).
+# order(name)
+order() {
+	sort -t '	' -k1rn,1
+}
+
 # fetch and parse feed.
 # feed(name, feedurl)
 feed() {
-	# wait until ${maxjobs} are finished: throughput using this logic is
-	# non-optimal, but it is simple and portable.
+	# wait until ${maxjobs} are finished: will stall the queue if an item
+	# is slow, but it is portable.
 	[ ${signo} -ne 0 ] && return
 	[ $((curjobs % maxjobs)) -eq 0 ] && wait
 	[ ${signo} -ne 0 ] && return

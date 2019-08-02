@@ -6,8 +6,8 @@ Twitter feed HTML scraper.
 It scrapes HTML from stdin and outputs it to a TAB-separated format that can be
 easier parsed with various (UNIX) tools. There are formatting programs included
 to convert this TAB-separated format to various other formats. There are also
-some programs and scripts included to import and export OPML and to update,
-sort, filter and merge feed items.
+some programs and scripts included to import and export OPML and to fetch,
+filter, merge and order items.
 
 
 Build and install
