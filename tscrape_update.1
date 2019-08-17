@@ -1,0 +1,89 @@
+.Dd August 17, 2019
+.Dt TSCRAPE_UPDATE 1
+.Os
+.Sh NAME
+.Nm tscrape_update
+.Nd update feeds and merge with old feeds
+.Sh SYNOPSIS
+.Nm
+.Op Ar tscraperc
+.Sh DESCRIPTION
+.Nm
+updates feeds files and merges the new data with the previous files.
+These are the files in the directory
+.Pa $HOME/.tscrape/feeds
+by default.
+.Sh OPTIONS
+.Bl -tag -width 17n
+.It Ar tscraperc
+Config file, if not specified uses the path
+.Pa $HOME/.tscrape/tscraperc
+by default.
+See the
+.Sx FILES READ
+section for more information.
+.El
+.Sh FILES READ
+.Bl -tag -width 17n
+.It Ar tscraperc
+Config file, see the tscraperc.example file for an example.
+This file is evaluated as a shellscript in
+.Nm .
+.Pp
+Atleast the following functions can be overridden per feed:
+.Bl -tag -width 17n
+.It Fn fetch
+to use
+.Xr wget 1 ,
+OpenBSD
+.Xr ftp 1
+or an other download program.
+.It Fn merge
+to change the merge logic.
+.It Fn filter
+to filter on fields.
+.It Fn order
+to change the sort order.
+.El
+.Pp
+The
+.Fn feeds
+function is called to process the feeds.
+The default
+.Fn feed
+function is executed concurrently as a background job in your
+.Xr tscraperc 5
+config file to make updating faster.
+The variable
+.Va maxjobs
+can be changed to limit or increase the amount of concurrent jobs (8 by
+default).
+.El
+.Sh FILES WRITTEN
+.Bl -tag -width 17n
+.It feedname
+TAB-separated format containing all items per feed.
+The
+.Nm
+script merges new items with this file.
+The filename cannot contain '/' characters, they will be replaced with '_'.
+.El
+.Sh EXAMPLES
+To update your feeds and format them in various formats:
+.Bd -literal
+# Update
+tscrape_update "configfile"
+# Plain-text list
+tscrape_plain $HOME/.tscrape/feeds/* > $HOME/.tscrape/feeds.txt
+# HTML
+tscrape_html $HOME/.tscrape/feeds/* > $HOME/.tscrape/feeds.html
+.Ed
+.Sh SEE ALSO
+.Xr tscrape 1 ,
+.Xr tscrape_html 1 ,
+.Xr tscrape_plain 1 ,
+.Xr sh 1 ,
+.Xr tscrape 5 ,
+.Xr tscraperc 5
+.Sh AUTHORS
+.An Hiltjo Posthuma Aq Mt hiltjo@codemadness.org

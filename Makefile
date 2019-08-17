@@ -36,7 +36,11 @@ COMPATOBJ =\
 
 LIB = ${LIBUTIL} ${LIBXML} ${COMPATOBJ}
 
-MAN1 = tscrape.1
+MAN1 = ${BIN:=.1}\
+	${SCRIPTS:=.1}
+MAN5 = \
+	tscrape.5\
+	tscraperc.5
 DOC = \
 	LICENSE\
 	README
@@ -66,7 +70,7 @@ ${LIBXML}: ${LIBXMLOBJ}
 dist:
 	rm -rf "${NAME}-${VERSION}"
 	mkdir -p "${NAME}-${VERSION}"
-	cp -f ${MAN1} ${DOC} ${HDR} \
+	cp -f ${MAN1} ${MAN5} ${DOC} ${HDR} \
 		${SRC} ${LIBXMLSRC} ${LIBUTILSRC} ${COMPATSRC} ${SCRIPTS} \
 		Makefile config.mk \
 		tscraperc.example style.css \
@@ -90,10 +94,14 @@ install: all
 		style.css\
 		README\
 		"${DESTDIR}${DOCPREFIX}"
-	# installing manual pages for tools.
+	# installing manual pages for general commands: section 1.
 	mkdir -p "${DESTDIR}${MANPREFIX}/man1"
 	cp -f ${MAN1} "${DESTDIR}${MANPREFIX}/man1"
 	for m in $(MAN1); do chmod 644 "${DESTDIR}${MANPREFIX}/man1/$$m"; done
+	# installing manual pages for file formats: section 5.
+	mkdir -p "${DESTDIR}${MANPREFIX}/man5"
+	cp -f ${MAN5} "${DESTDIR}${MANPREFIX}/man5"
+	for m in ${MAN5}; do chmod 644 "${DESTDIR}${MANPREFIX}/man5/$$m"; done
 
 uninstall:
 	# removing executable files and scripts.
@@ -106,5 +114,6 @@ uninstall:
 	-rmdir "${DESTDIR}${DOCPREFIX}"
 	# removing manual pages.
 	for m in $(MAN1); do rm -f "${DESTDIR}${MANPREFIX}/man1/$$m"; done
+	for m in ${MAN5}; do rm -f "${DESTDIR}${MANPREFIX}/man5/$$m"; done
 
 .PHONY: all clean dist install uninstall

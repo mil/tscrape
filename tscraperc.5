@@ -1,0 +1,98 @@
+.Dd July 14, 2019
+.Dt TSCRAPERC 5
+.Os
+.Sh NAME
+.Nm tscraperc
+.Nd tscrape_update(1) configuration file
+.Sh DESCRIPTION
+.Nm
+is the configuration file for
+.Xr tscrape_update 1 .
+.Pp
+The variable
+.Va tscrapepath
+can be set for the directory to store the TAB-separated feed files,
+by default this is
+.Pa $HOME/.tscrape/feeds .
+.
+.Sh FUNCTIONS
+The following functions must be defined in a
+.Nm
+file:
+.Bl -tag -width Ds
+.It Fn feeds
+This function is like a "main" function called from
+.Xr tscrape_update 1 .
+.It Fn feed "name" "feedurl"
+Function to process the feed, its arguments are in the order:
+.Bl -tag -width Ds
+.It Fa name
+Name of the feed, this is also used as the filename for the TAB-separated
+feed file.
+The filename cannot contain '/' characters, they will be replaced with '_'.
+.It Fa feedurl
+Uri to fetch the RSS/Atom data from, usually a HTTP or HTTPS uri.
+.El
+.El
+.Sh OVERRIDE FUNCTIONS
+Because
+.Xr tscrape_update 1
+is a shellscript each function can be overridden to change its behaviour,
+notable functions are:
+.Bl -tag -width Ds
+.It Fn fetch "name" "uri" "feedfile"
+Fetch feed from url and writes data to stdout, its arguments are:
+.Bl -tag -width Ds
+.It Fa name
+Specified name in configuration file (useful for logging).
+.It Fa uri
+Uri to fetch.
+.It Fa feedfile
+Used feedfile (useful for comparing modification times).
+.El
+.It Fn merge "name" "oldfile" "newfile"
+Merge data of oldfile with newfile and writes it to stdout, its arguments are:
+.Bl -tag -width Ds
+.It Fa name
+Feed name.
+.It Fa oldfile
+Old file.
+.It Fa newfile
+New file.
+.El
+.It Fn filter "name"
+Filter
+.Xr tscrape 5
+data from stdin, write to stdout, its arguments are:
+.Bl -tag -width Ds
+.It Fa name
+Feed name.
+.El
+.It Fn order "name"
+Sort
+.Xr tscrape 5
+data from stdin, write to stdout, its arguments are:
+.Bl -tag -width Ds
+.It Fa name
+Feed name.
+.El
+.El
+.Sh EXAMPLES
+An example configuration file is included named tscraperc.example and also
+shown below:
+.Bd -literal
+#tscrapepath="$HOME/.tscrape/feeds"
+
+# list of feeds to fetch:
+feeds() {
+	# feed <name> <feedurl>
+	feed "Rich Felker" "https://twitter.com/richfelker"
+	feed "Internet of shit" "https://twitter.com/internetofshit"
+	feed "Donald Trump" "https://twitter.com/realdonaldtrump"
+}
+.Ed
+.Sh SEE ALSO
+.Xr tscrape_update 1 ,
+.Xr sh 1
+.Sh AUTHORS
+.An Hiltjo Posthuma Aq Mt hiltjo@codemadness.org

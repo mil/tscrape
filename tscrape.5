@@ -1,0 +1,47 @@
+.Dd July 20, 2019
+.Dt TSCRAPE 5
+.Os
+.Sh NAME
+.Nm tscrape
+.Nd output format
+.Sh SYNOPSIS
+.Nm
+.Sh DESCRIPTION
+.Xr tscrape 1
+writes the feed data in a TAB-separated format to stdout.
+.Sh TAB-SEPARATED FORMAT FIELDS
+The items are output per line in a TSV-like format.
+.Pp
+The fields are not allowed to have newlines and TABs, all whitespace characters
+are replaced by a single space character.
+Control characters are removed.
+.Sh TAB-SEPARATED FORMAT FIELDS
+The items are saved in a TSV-like format. Control characters are replaced
+by a single space.
+.Pp
+The order and format of the fields are:
+.Bl -tag -width 17n
+.It UNIX timestamp
+UNIX timestamp in UTC+0.
+.It username
+Twitter username (can be a retweet).
+.It fullname
+Twitter fullname (can be a retweet).
+.It tweet text
+Tweet text.
+.It item id
+Item id.
+.It item username
+Item username.
+.It item fullname
+Item fullname.
+.It item retweetid
+Item Retweet ID.
+.It item is pinned
+Item is pinned or not? 0 or 1.
+.El
+.Sh SEE ALSO
+.Xr tscrape 1 ,
+.Xr tscrape_plain 1
+.Sh AUTHORS
+.An Hiltjo Posthuma Aq Mt hiltjo@codemadness.org
