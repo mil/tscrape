@@ -3,7 +3,7 @@
 .Os
 .Sh NAME
 .Nm tscrape
-.Nd output format
+.Nd feed format
 .Sh SYNOPSIS
 .Nm
 .Sh DESCRIPTION
@@ -16,10 +16,10 @@ The fields are not allowed to have newlines and TABs, all whitespace characters
 are replaced by a single space character.
 Control characters are removed.
 .Sh TAB-SEPARATED FORMAT FIELDS
-The items are saved in a TSV-like format. Control characters are replaced
-by a single space.
+The items are saved in a TSV-like format.
+Control characters are replaced by a single space.
 .Pp
-The order and format of the fields are:
+The order and content of the fields are:
 .Bl -tag -width 17n
 .It UNIX timestamp
 UNIX timestamp in UTC+0.
